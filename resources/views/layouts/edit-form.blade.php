@@ -52,8 +52,12 @@
             <div class="box-body">
 
                 <div style="padding-top: 30px;">
-                    @if ($item->id)
-                    {{ method_field('PUT') }}
+                    @if (isset($httpMethod))
+                        @if (strtoupper($httpMethod) !== 'POST')
+                            {{ method_field(strtoupper($httpMethod)) }}
+                        @endif
+                    @elseif ($item->id)
+                        {{ method_field('PUT') }}
                     @endif
 
                     <!-- CSRF Token -->

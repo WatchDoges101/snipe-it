@@ -9,6 +9,8 @@ class IconHelper
         switch ($type) {
             case 'checkout':
                 return 'fa-solid fa-rotate-left';
+            case 'reset':
+                return 'fa-solid fa-arrow-rotate-left';
             case 'checkin':
                 return 'fa-solid fa-rotate-right';
             case 'edit':

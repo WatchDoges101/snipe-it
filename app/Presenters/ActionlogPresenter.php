@@ -7,6 +7,13 @@ namespace App\Presenters;
  */
 class ActionlogPresenter extends Presenter
 {
+    private function isConsumableReset(): bool
+    {
+        return ($this->action_type === 'update')
+            && is_string($this->note)
+            && str_starts_with($this->note, 'Consumable replenished:');
+    }
+
     public function adminuser()
     {
         if ($user = $this->model->user) {
@@ -38,6 +45,10 @@ class ActionlogPresenter extends Presenter
 
     public function icon()
     {
+
+        if ($this->isConsumableReset()) {
+            return 'fa-solid fa-arrow-rotate-left';
+        }
 
         // User related icons
         if ($this->itemType() == 'user') {
@@ -116,6 +127,10 @@ class ActionlogPresenter extends Presenter
 
     public function actionType()
     {
+        if ($this->isConsumableReset()) {
+            return 'replenish';
+        }
+
         return mb_strtolower(trans('general.'.str_replace(' ', '_', $this->action_type)));
     }
 

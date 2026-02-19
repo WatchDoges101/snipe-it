@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\RedirectResponse;
 use \Illuminate\Contracts\View\View;
 use App\Http\Requests\StoreConsumableRequest;
+use App\Models\Actionlog;
 
 /**
  * This controller handles all actions related to Consumables for
@@ -234,5 +235,91 @@ class ConsumablesController extends Controller
         return view('consumables/edit')
             ->with('cloned_model', $consumable_to_close)
             ->with('item', $consumable);
+    }
+
+    /**
+     * Show reset form (set total qty).
+     */
+    public function resetForm(Consumable $consumable)
+    {
+        $this->authorize($consumable);
+        return view('consumables/reset')->with('item', $consumable);
+    }
+
+    /**
+     * Handle reset submission (reset remaining to total), keep history via Actionlog.
+     */
+    public function reset(\Illuminate\Http\Request $request, Consumable $consumable)
+    {
+        $this->authorize($consumable);
+
+        $request->validate([
+            'note' => 'nullable|string',
+        ]);
+
+        $totalQty = (int) $consumable->qty;
+        $remainingBefore = (int) $consumable->numRemaining();
+
+        $consumable->users()->detach();
+
+        $remainingAfter = (int) $consumable->numRemaining();
+
+        $log = new Actionlog();
+        $log->item()->associate($consumable);
+        $log->action_type = 'update';
+        $log->note = 'Consumable replenished: remaining changed from '.$remainingBefore.' to '.$remainingAfter.' (total: '.$totalQty.').'
+            . ($request->input('note') ? "\n" . $request->input('note') : '');
+        $log->created_by = auth()->id();
+        $log->save();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Replenish Success',
+                'data' => [
+                    'id' => $consumable->id,
+                    'qty' => $consumable->qty,
+                    'remaining' => $consumable->numRemaining(),
+                ],
+            ]);
+        }
+
+        return redirect()->route('consumables.index')->with('success', 'Replenish Success');
+    }
+
+    /**
+     * Show replenish form.
+     */
+    public function replenishForm(Consumable $consumable)
+    {
+        $this->authorize($consumable);
+        return view('consumables/replenish')->with('item', $consumable);
+    }
+
+    /**
+     * Handle replenish submission (add qty).
+     */
+    public function replenish(\Illuminate\Http\Request $request, Consumable $consumable)
+    {
+        $this->authorize($consumable);
+
+        $request->validate([
+            'qty' => 'required|integer|min:1',
+            'note' => 'nullable|string',
+        ]);
+
+        $add = (int) $request->input('qty');
+        $consumable->qty = $consumable->qty + $add;
+        $consumable->save();
+
+        // Create an action log entry
+        $log = new \App\Models\Actionlog();
+        $log->item()->associate($consumable);
+        $log->action_type = 'update';
+        $log->note = trans('admin/consumables/message.replenished', ['qty' => $add]) . ($request->input('note') ? '\n' . $request->input('note') : '');
+        $log->created_by = auth()->id();
+        $log->save();
+
+        return redirect()->route('consumables.index')->with('success', trans('admin/consumables/message.replenished_success', ['qty' => $add]));
     }
 }

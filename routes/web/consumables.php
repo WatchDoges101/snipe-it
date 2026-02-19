@@ -20,6 +20,22 @@ Route::group(['prefix' => 'consumables', 'middleware' => ['auth']], function () 
     Route::get('{consumable}/clone',
         [Consumables\ConsumablesController::class, 'clone']
     )->name('consumables.clone.create');
+
+    Route::get('{consumable}/replenish',
+        [Consumables\ConsumablesController::class, 'replenishForm']
+    )->name('consumables.replenish.show');
+
+    Route::match(['post', 'put', 'patch'], '{consumable}/replenish',
+        [Consumables\ConsumablesController::class, 'replenish']
+    )->name('consumables.replenish.store');
+
+    Route::get('{consumable}/reset',
+        [Consumables\ConsumablesController::class, 'resetForm']
+    )->name('consumables.reset.show');
+
+    Route::match(['post', 'put', 'patch'], '{consumable}/reset',
+        [Consumables\ConsumablesController::class, 'reset']
+    )->name('consumables.reset.store');
     
 
 });

@@ -1086,6 +1086,10 @@
                 }
             }
 
+            if ((row.available_actions) && (row.available_actions.reset === true)) {
+                actions += '<a href="{{ config('app.url') }}/' + dest + '/' + row.id + '/reset" class="actions btn btn-sm btn-success" data-tooltip="true" title="{{ trans('admin/consumables/form.replenish') }}"><i class="fa-solid fa-arrow-rotate-left fa-fw"></i><span class="sr-only">{{ trans('admin/consumables/form.replenish') }}</span></a>&nbsp;';
+            }
+
             if ((row.available_actions) && (row.available_actions.delete === true)) {
 
                 // use the asset tag if no name is provided
@@ -1192,6 +1196,51 @@
             return value.replace(/(?:\r\n|\r|\n)/g, '<br />');
         }
     }
+
+    // Reset modal handling for consumables
+    $(document).on('click', '.btn-reset', function (e) {
+        e.preventDefault();
+        var button = $(this);
+        var id = button.data('id');
+        var name = button.data('name') || '';
+
+        var modal = $('#resetModal');
+        modal.find('.modal-title').text('Replenish: ' + name);
+        var form = modal.find('form');
+        form.attr('action', '{{ url('/') }}' + '/consumables/' + id + '/reset');
+        form.find('[name="note"]').val('');
+        modal.find('#resetModalMinHelp').text('Press save to replenish remaining to total quantity');
+        modal.modal('show');
+    });
+
+    $(document).on('click', '#resetModalSubmit', function (e) {
+        e.preventDefault();
+        var modal = $('#resetModal');
+        var form = modal.find('form');
+        var action = form.attr('action');
+        var data = form.serialize();
+
+        $.ajax({
+            url: action,
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: data,
+            success: function (resp) {
+                modal.modal('hide');
+                if (resp && resp.message) {
+                    if (window.toastr) { toastr.success(resp.message); } else { alert(resp.message); }
+                }
+                // refresh current page so all visible totals and remaining counts update immediately
+                setTimeout(function () { window.location.reload(); }, 300);
+            },
+            error: function (xhr) {
+                var msg = 'Replenish Fail';
+                if (window.toastr) { toastr.error(msg); } else { alert(msg); }
+            }
+        });
+    });
 
     // Check if checkbox should be selectable
     // Selectability is determined by the API field "selectable" which is set at the Presenter/API Transformer
