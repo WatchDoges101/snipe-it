@@ -1,5 +1,6 @@
 @props([
     'count' => null,
+    'class' => false,
 ])
 @aware(['class'])
 
