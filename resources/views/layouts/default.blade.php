@@ -1180,7 +1180,7 @@
                                         @can('viewRequestable', \App\Models\Asset::class)
                                             <li {!! (request()->is('account/requested') ? ' class="active"' : '') !!}>
                                                 <a href="{{ route('account.requested') }}">
-                                                    <x-icon type="checkmark" class="fa-fw" />
+                                                    <x-icon type="requested" class="fa-fw" />
                                                     {{ trans('general.requested_assets_menu') }}
                                                 </a></li>
                                         @endcan
