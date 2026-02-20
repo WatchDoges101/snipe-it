@@ -123,6 +123,15 @@ class ConsumablePresenter extends Presenter
                 'class' => 'text-right text-padding-number-cell',
                 'footerFormatter' => 'qtySumFormatter',
             ], [
+                'field' => 'order_amount',
+                'searchable' => false,
+                'sortable' => true,
+                'switchable' => true,
+                'title' => trans('admin/consumables/general.order_amount'),
+                'visible' => true,
+                'class' => 'text-right text-padding-number-cell',
+                'footerFormatter' => 'qtySumFormatter',
+            ], [
                 'field' => 'purchase_cost',
                 'searchable' => true,
                 'sortable' => true,

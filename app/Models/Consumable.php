@@ -540,6 +540,19 @@ class Consumable extends SnipeModel
     }
 
     /**
+     * Query builder scope to order on order amount
+     *
+     * @param \Illuminate\Database\Query\Builder $query Query builder instance
+     * @param string                             $order Order
+     *
+     * @return \Illuminate\Database\Query\Builder          Modified query builder
+     */
+    public function scopeOrderAmount($query, $order)
+    {
+        return $query->orderByRaw('consumables_users_count '.$order);
+    }
+
+    /**
      * Query builder scope to order on supplier
      *
      * @param \Illuminate\Database\Query\Builder $query Query builder instance
