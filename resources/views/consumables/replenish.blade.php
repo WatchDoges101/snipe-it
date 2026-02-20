@@ -2,17 +2,21 @@
     'createText' => trans('admin/consumables/form.replenish'),
     'updateText' => trans('admin/consumables/form.replenish'),
     'httpMethod' => 'POST',
-    'topSubmit' => true,
     'helpText' => trans('help.consumables'),
     'helpPosition' => 'right',
     'formAction' => route('consumables.replenish.store', $item->id),
-    'index_route' => 'consumables.index'
+    'index_route' => 'consumables.index',
+    'options' => [
+                'back' => trans('admin/hardware/form.redirect_to_type',['type' => trans('general.previous_page')]),
+                'index' => trans('admin/hardware/form.redirect_to_all', ['type' => 'consumables']),
+                'item' => trans('admin/hardware/form.redirect_to_type', ['type' => trans('general.consumable')]),
+               ]
 ])
 
 @section('inputFields')
 
     <div class="form-group required">
-        <label class="col-md-3 control-label">{{ trans('admin/consumables/form.qty_to_add') }}</label>
+        <label class="col-md-3 control-label">QTY to Replenish</label>
         <div class="col-md-7 col-sm-12">
             <input type="number" name="qty" class="form-control" min="1" value="1" required />
         </div>

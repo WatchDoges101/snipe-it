@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use \Illuminate\Contracts\View\View;
 use App\Http\Requests\StoreConsumableRequest;
 use App\Models\Actionlog;
+use App\Models\ConsumableAssignment;
 
 /**
  * This controller handles all actions related to Consumables for
@@ -243,7 +244,9 @@ class ConsumablesController extends Controller
     public function resetForm(Consumable $consumable)
     {
         $this->authorize($consumable);
-        return view('consumables/reset')->with('item', $consumable);
+        return view('consumables/reset')
+            ->with('item', $consumable)
+            ->with('max_replenish', (int) $consumable->numCheckedOut());
     }
 
     /**
@@ -253,24 +256,39 @@ class ConsumablesController extends Controller
     {
         $this->authorize($consumable);
 
+        $maxReplenish = (int) $consumable->numCheckedOut();
+
         $request->validate([
+            'qty' => "required|integer|min:1|max:$maxReplenish",
             'note' => 'nullable|string',
         ]);
 
         $totalQty = (int) $consumable->qty;
         $remainingBefore = (int) $consumable->numRemaining();
+        $replenishQty = (int) $request->input('qty');
 
-        $consumable->users()->detach();
+        $assignmentIds = ConsumableAssignment::where('consumable_id', $consumable->id)
+            ->orderBy('id')
+            ->limit($replenishQty)
+            ->pluck('id');
+
+        ConsumableAssignment::whereIn('id', $assignmentIds)->delete();
 
         $remainingAfter = (int) $consumable->numRemaining();
 
         $log = new Actionlog();
         $log->item()->associate($consumable);
         $log->action_type = 'update';
-        $log->note = 'Consumable replenished: remaining changed from '.$remainingBefore.' to '.$remainingAfter.' (total: '.$totalQty.').'
+        $log->note = 'Consumable replenished (qty: '.$replenishQty.'): remaining changed from '.$remainingBefore.' to '.$remainingAfter.' (total: '.$totalQty.').'
             . ($request->input('note') ? "\n" . $request->input('note') : '');
         $log->created_by = auth()->id();
         $log->save();
+
+        if($request->input('redirect_option') === 'back'){
+            session()->put(['redirect_option' => 'index']);
+        } else {
+            session()->put(['redirect_option' => $request->input('redirect_option')]);
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -284,7 +302,8 @@ class ConsumablesController extends Controller
             ]);
         }
 
-        return redirect()->route('consumables.index')->with('success', 'Replenish Success');
+        return Helper::getRedirectOption($request, $consumable->id, 'Consumables')
+            ->with('success', 'Replenish Success');
     }
 
     /**
@@ -320,6 +339,13 @@ class ConsumablesController extends Controller
         $log->created_by = auth()->id();
         $log->save();
 
-        return redirect()->route('consumables.index')->with('success', trans('admin/consumables/message.replenished_success', ['qty' => $add]));
+        if($request->input('redirect_option') === 'back'){
+            session()->put(['redirect_option' => 'index']);
+        } else {
+            session()->put(['redirect_option' => $request->input('redirect_option')]);
+        }
+
+        return Helper::getRedirectOption($request, $consumable->id, 'Consumables')
+            ->with('success', trans('admin/consumables/message.replenished_success', ['qty' => $add]));
     }
 }
