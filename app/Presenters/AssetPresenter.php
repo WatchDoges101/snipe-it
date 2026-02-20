@@ -445,60 +445,36 @@ class AssetPresenter extends Presenter
     public static function assignedConsumablesDataTableLayout()
     {
         $layout = [
-            [
-                'field' => 'id',
-                'searchable' => false,
-                'sortable' => false,
-                'switchable' => true,
-                'title' => trans('general.id'),
-                'visible' => false,
-            ],
-            [
-                'field' => 'consumable',
-                'searchable' => false,
-                'sortable' => false,
-                'switchable' => true,
-                'title' => trans('general.consumable'),
-                'visible' => true,
-                'formatter' => 'consumablesLinkObjFormatter',
-            ],
-            [
-                'field' => 'image',
-                'searchable' => false,
-                'sortable' => false,
-                'switchable' => true,
-                'title' => trans('general.image'),
-                'visible' => true,
-                'formatter' => 'imageFormatter',
-            ],
-            [
-                'field' => 'note',
-                'searchable' => false,
-                'sortable' => false,
-                'switchable' => true,
-                'title' => trans('general.notes'),
-                'visible' => true,
-            ],
-            [
-                'field' => 'created_at',
-                'searchable' => false,
-                'sortable' => false,
-                'switchable' => true,
-                'title' => trans('admin/hardware/table.checkout_date'),
-                'visible' => true,
-                'formatter' => 'dateDisplayFormatter',
-            ],
-            [
-                'field' => 'created_by',
-                'searchable' => false,
-                'sortable' => false,
-                'title' => trans('general.created_by'),
-                'visible' => false,
-                'formatter' => 'usersLinkObjFormatter',
-            ],
+            self::assignedConsumableColumn('id', trans('general.id'), false),
+            self::assignedConsumableColumn('consumable', trans('general.consumable'), true, 'consumablesLinkObjFormatter'),
+            self::assignedConsumableColumn('image', trans('general.image'), true, 'imageFormatter'),
+            self::assignedConsumableColumn('note', trans('general.notes'), true),
+            self::assignedConsumableColumn('created_at', trans('admin/hardware/table.checkout_date'), true, 'dateDisplayFormatter'),
+            self::assignedConsumableColumn('created_by', trans('general.created_by'), false, 'usersLinkObjFormatter', false),
         ];
 
         return json_encode($layout);
+    }
+
+    private static function assignedConsumableColumn($field, $title, $visible, $formatter = null, $switchable = true)
+    {
+        $column = [
+            'field' => $field,
+            'searchable' => false,
+            'sortable' => false,
+            'title' => $title,
+            'visible' => $visible,
+        ];
+
+        if ($switchable) {
+            $column['switchable'] = true;
+        }
+
+        if (! is_null($formatter)) {
+            $column['formatter'] = $formatter;
+        }
+
+        return $column;
     }
 
     /**

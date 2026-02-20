@@ -346,34 +346,34 @@ class AssetsTransformer
         }
     }
 
-    public function transformCheckedoutConsumables($consumable_assignments, $total)
+    public function transformCheckedoutConsumables($assignments, $total)
     {
 
         $array = [];
-        foreach ($consumable_assignments as $assignment) {
+        foreach ($assignments as $assignment) {
             $array[] = self::transformCheckedoutConsumable($assignment);
         }
 
         return (new DatatablesTransformer)->transformDatatables($array, $total);
     }
 
-    public function transformCheckedoutConsumable(ConsumableAssignment $consumable_assignment)
+    public function transformCheckedoutConsumable(ConsumableAssignment $assignment)
     {
-        if ($consumable_assignment->consumable) {
+        if ($assignment->consumable) {
             return [
-                'id' => $consumable_assignment->id,
+                'id' => $assignment->id,
                 'consumable' => [
-                    'id' => $consumable_assignment->consumable->id,
-                    'name' => $consumable_assignment->consumable->name,
+                    'id' => $assignment->consumable->id,
+                    'name' => $assignment->consumable->name,
                 ],
-                'assigned_to' => $consumable_assignment->assigned_to,
-                'image' => $consumable_assignment->consumable->getImageUrl() ?: null,
-                'note' => $consumable_assignment->note ? e($consumable_assignment->note) : null,
-                'created_by' => $consumable_assignment->adminuser ? [
-                    'id' => (int) $consumable_assignment->adminuser->id,
-                    'name' => e($consumable_assignment->adminuser->present()->fullName),
+                'assigned_to' => $assignment->assigned_to,
+                'image' => $assignment->consumable->getImageUrl() ?: null,
+                'note' => $assignment->note ? e($assignment->note) : null,
+                'created_by' => $assignment->adminuser ? [
+                    'id' => (int) $assignment->adminuser->id,
+                    'name' => e($assignment->adminuser->present()->fullName),
                 ] : null,
-                'created_at' => Helper::getFormattedDateObject($consumable_assignment->created_at, 'datetime'),
+                'created_at' => Helper::getFormattedDateObject($assignment->created_at, 'datetime'),
             ];
         }
 

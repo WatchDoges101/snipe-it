@@ -69,45 +69,18 @@ class ConsumableCheckoutController extends Controller
      */
     public function store(ConsumableCheckoutRequest $request, $consumableId)
     {
-        if (is_null($consumable = Consumable::with('users')->find($consumableId))) {
-            return redirect()->route('consumables.index')->with('error', trans('admin/consumables/message.not_found'));
+        $checkoutContext = $this->prepareCheckoutContext($request, $consumableId);
+
+        if ($checkoutContext instanceof RedirectResponse) {
+            return $checkoutContext;
         }
 
-        $this->authorize('checkout', $consumable);
-
-        // If the quantity is not present in the request or is not a positive integer, set it to 1
-        $quantity = $request->input('checkout_qty');
-        if (!isset($quantity) || !ctype_digit((string)$quantity) || $quantity <= 0) {
-            $quantity = 1;
-        }
-
-        // Make sure there is at least one available to checkout
-        if ($consumable->numRemaining() <= 0 || $quantity > $consumable->numRemaining()) {
-            return redirect()->route('consumables.index')->with('error', trans('admin/consumables/message.checkout.unavailable', ['requested' => $quantity, 'remaining' => $consumable->numRemaining() ]));
-        }
-
-        $target = $this->determineCheckoutTarget();
-
-        if (!$target) {
-            return redirect()->route('consumables.checkout.show', $consumable)->with('error', trans('admin/consumables/message.checkout.user_does_not_exist'))->withInput();
-        }
-
-        if ((Setting::getSettings()->full_multiple_companies_support) && ($target instanceof Asset) && ($consumable->company_id !== $target->company_id)) {
-            return redirect()->route('consumables.checkout.show', $consumable)->with('error', trans('general.error_user_company'))->withInput();
-        }
+        ['consumable' => $consumable, 'quantity' => $quantity, 'target' => $target] = $checkoutContext;
 
         // Update the consumable data
         $consumable->assigned_to = $target->id;
 
-        for ($i = 0; $i < $quantity; $i++){
-            $consumable->consumableAssignments()->create([
-                'consumable_id' => $consumable->id,
-                'created_by' => auth()->id(),
-                'assigned_to' => $target->id,
-                'assigned_type' => $target::class,
-                'note' => $request->input('note'),
-            ]);
-        }
+        $this->createConsumableAssignments($consumable, $target, $quantity, $request->input('note'));
 
         $consumable->checkout_qty = $quantity;
 
@@ -120,13 +93,7 @@ class ConsumableCheckoutController extends Controller
             $consumable->checkout_qty,
         ));
 
-        if ($target instanceof Asset) {
-            $request->request->add(['assigned_asset' => $target->id]);
-            $request->request->add(['checkout_to_type' => 'asset']);
-        } else {
-            $request->request->add(['assigned_user' => $target->id]);
-            $request->request->add(['checkout_to_type' => 'user']);
-        }
+        $this->setCheckoutTargetOnRequest($request, $target);
 
         session()->put(['redirect_option' => $request->input('redirect_option'), 'checkout_to_type' => $request->input('checkout_to_type')]);
 
@@ -134,5 +101,91 @@ class ConsumableCheckoutController extends Controller
         // Redirect to the new consumable page
         return Helper::getRedirectOption($request, $consumable->id, 'Consumables')
             ->with('success', trans('admin/consumables/message.checkout.success'));
+    }
+
+    private function prepareCheckoutContext(ConsumableCheckoutRequest $request, $consumableId)
+    {
+        if (is_null($consumable = Consumable::with('users')->find($consumableId))) {
+            return redirect()->route('consumables.index')->with('error', trans('admin/consumables/message.not_found'));
+        }
+
+        $this->authorize('checkout', $consumable);
+
+        $quantity = $this->normalizedCheckoutQuantity($request->input('checkout_qty'));
+
+        if ($redirectResponse = $this->checkoutAvailabilityError($consumable, $quantity)) {
+            return $redirectResponse;
+        }
+
+        $target = $this->determineCheckoutTarget();
+
+        if ($redirectResponse = $this->checkoutTargetError($consumable, $target)) {
+            return $redirectResponse;
+        }
+
+        return [
+            'consumable' => $consumable,
+            'quantity' => $quantity,
+            'target' => $target,
+        ];
+    }
+
+    private function normalizedCheckoutQuantity($quantity): int
+    {
+        if (! isset($quantity) || ! ctype_digit((string) $quantity) || $quantity <= 0) {
+            return 1;
+        }
+
+        return (int) $quantity;
+    }
+
+    private function checkoutAvailabilityError(Consumable $consumable, int $quantity): ?RedirectResponse
+    {
+        $remaining = $consumable->numRemaining();
+
+        if (($remaining <= 0) || ($quantity > $remaining)) {
+            return redirect()->route('consumables.index')->with('error', trans('admin/consumables/message.checkout.unavailable', ['requested' => $quantity, 'remaining' => $remaining ]));
+        }
+
+        return null;
+    }
+
+    private function checkoutTargetError(Consumable $consumable, $target): ?RedirectResponse
+    {
+        if (! $target) {
+            return redirect()->route('consumables.checkout.show', $consumable)->with('error', trans('admin/consumables/message.checkout.user_does_not_exist'))->withInput();
+        }
+
+        if ((Setting::getSettings()->full_multiple_companies_support) && ($target instanceof Asset) && ($consumable->company_id !== $target->company_id)) {
+            return redirect()->route('consumables.checkout.show', $consumable)->with('error', trans('general.error_user_company'))->withInput();
+        }
+
+        return null;
+    }
+
+    private function createConsumableAssignments(Consumable $consumable, $target, int $quantity, ?string $note): void
+    {
+        for ($index = 0; $index < $quantity; $index++) {
+            $consumable->consumableAssignments()->create([
+                'consumable_id' => $consumable->id,
+                'created_by' => auth()->id(),
+                'assigned_to' => $target->id,
+                'assigned_type' => $target::class,
+                'note' => $note,
+            ]);
+        }
+    }
+
+    private function setCheckoutTargetOnRequest(Request $request, $target): void
+    {
+        if ($target instanceof Asset) {
+            $request->request->add(['assigned_asset' => $target->id]);
+            $request->request->add(['checkout_to_type' => 'asset']);
+
+            return;
+        }
+
+        $request->request->add(['assigned_user' => $target->id]);
+        $request->request->add(['checkout_to_type' => 'user']);
     }
 }
