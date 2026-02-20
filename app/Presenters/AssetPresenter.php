@@ -450,29 +450,34 @@ class AssetPresenter extends Presenter
             self::assignedConsumableColumn('image', trans('general.image'), true, 'imageFormatter'),
             self::assignedConsumableColumn('note', trans('general.notes'), true),
             self::assignedConsumableColumn('created_at', trans('admin/hardware/table.checkout_date'), true, 'dateDisplayFormatter'),
-            self::assignedConsumableColumn('created_by', trans('general.created_by'), false, 'usersLinkObjFormatter', false),
+            self::assignedConsumableFixedColumn('created_by', trans('general.created_by'), false, 'usersLinkObjFormatter'),
         ];
 
         return json_encode($layout);
     }
 
-    private static function assignedConsumableColumn($field, $title, $visible, $formatter = null, $switchable = true)
+    private static function assignedConsumableColumn($field, $title, $visible, $formatter=null)
     {
         $column = [
             'field' => $field,
             'searchable' => false,
             'sortable' => false,
+            'switchable' => true,
             'title' => $title,
             'visible' => $visible,
         ];
 
-        if ($switchable) {
-            $column['switchable'] = true;
-        }
-
         if (! is_null($formatter)) {
             $column['formatter'] = $formatter;
         }
+
+        return $column;
+    }
+
+    private static function assignedConsumableFixedColumn($field, $title, $visible, $formatter=null)
+    {
+        $column = self::assignedConsumableColumn($field, $title, $visible, $formatter);
+        unset($column['switchable']);
 
         return $column;
     }
