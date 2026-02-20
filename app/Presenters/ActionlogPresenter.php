@@ -11,7 +11,7 @@ class ActionlogPresenter extends Presenter
     {
         return ($this->action_type === 'update')
             && is_string($this->note)
-            && str_starts_with($this->note, 'Consumable replenished:');
+            && str_starts_with($this->note, 'Consumable replenished');
     }
 
     public function adminuser()
