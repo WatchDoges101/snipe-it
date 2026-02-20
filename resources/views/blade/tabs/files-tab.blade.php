@@ -1,10 +1,10 @@
 @props([
     'count' => null,
-    'class' => false,
 ])
 
+@aware(['class'])
+
 <x-tabs.nav-item
-        :$class
         name="files"
         icon_type="files"
         label="{{ trans('general.files') }}"

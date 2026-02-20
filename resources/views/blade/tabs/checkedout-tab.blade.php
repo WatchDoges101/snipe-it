@@ -1,13 +1,14 @@
 @props([
     'count' => null,
-    'item' => null,
-    'class' => false,
+    'model' => null,
+    'class' => null,
 ])
+@aware(['class'])
 
-@can('view', $item)
+@can('view', $model)
     <x-tabs.nav-item
             name="assigned"
-            :$class
+            class="{{ $class ?? '' }}"
             icon_type="checkedout"
             label="{{ trans('general.checked_out') }}"
             count="{{ $count }}"

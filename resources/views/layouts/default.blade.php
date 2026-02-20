@@ -1902,32 +1902,6 @@
             </div>
         </div>
 
-        <!-- Reset consumable modal -->
-        <div class="modal modal-success fade" id="resetModal" tabindex="-1" role="dialog" aria-labelledby="resetModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                        <h4 class="modal-title" id="resetModalLabel">&nbsp;</h4>
-                    </div>
-                    <div class="modal-body">
-                        <form id="resetModalForm" method="POST" action="">
-                            {{ csrf_field() }}
-                            <p class="text-white" id="resetModalMinHelp"></p>
-                            <div class="form-group">
-                                <label>General Note</label>
-                                <textarea name="note" class="form-control" rows="3"></textarea>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default pull-left" data-dismiss="modal">{{ trans('general.cancel') }}</button>
-                        <button type="button" id="resetModalSubmit" class="btn btn-primary">{{ trans('general.save') }}</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
 
 
         {{-- Javascript files --}}
@@ -1942,14 +1916,6 @@
 
 
         <script nonce="{{ csrf_token() }}">
-
-            // Handle the first selected tabs regardless of permissions
-            if ($('li.snipetab').is(':first-of-type')) {
-                var hash = $('li.snipetab:first-of-type').children().attr('href');
-                $('li.snipetab:first-of-type').addClass('active');
-                $('div'+hash+'.snipetab-pane').addClass('in active');
-            }
-
 
             //color picker with addon
             $(".color").colorpicker();
@@ -2093,7 +2059,6 @@
                 format: "yyyy-mm-dd",
                 weekStart: {{ $snipeSettings->week_start ?? 0 }},
             };
-
 
             var clipboard = new ClipboardJS('.js-copy-link');
 

@@ -16,18 +16,21 @@
     <x-container columns="2">
         <x-page-column class="col-md-9">
             <x-box>
-                    <table
-                        data-columns="{{  \App\Presenters\UserPresenter::dataTableLayout() }}"
-                        data-cookie-id-table="groupsUsersTable"
-                        data-side-pagination="server"
-                        id="groupsUsersTable"
-                        class="table table-striped snipe-table"
-                        data-url="{{ route('api.users.index',['group_id'=> $group->id]) }}"
-                        data-export-options='{
-                        "fileName": "export-{{ str_slug($group->name) }}-group-users-{{ date('Y-m-d') }}",
-                            "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
-                            }'>
-                    </table>
+
+
+
+                                <table
+                                    data-columns="{{  \App\Presenters\UserPresenter::dataTableLayout() }}"
+                                    data-cookie-id-table="groupsUsersTable"
+                                    data-side-pagination="server"
+                                    id="groupsUsersTable"
+                                    class="table table-striped snipe-table"
+                                    data-url="{{ route('api.users.index',['group_id'=> $group->id]) }}"
+                                    data-export-options='{
+                                    "fileName": "export-{{ str_slug($group->name) }}-group-users-{{ date('Y-m-d') }}",
+                                        "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
+                                        }'>
+                                </table>
             </x-box>
 
         </x-page-column>
