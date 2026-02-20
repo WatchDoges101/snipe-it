@@ -24,7 +24,7 @@
             <x-tabs>
                 <x-slot:tabnav>
 
-                    <x-tabs.checkedout-tab class="active" count="{{ $accessory->checkouts_count }}" />
+                    <x-tabs.checkedout-tab :item="$accessory" count="{{ $accessory->checkouts_count }}" />
                     <x-tabs.files-tab count="{{ $accessory->uploads()->count() }}" />
                     <x-tabs.history-tab model="\App\Models\Accessory::class"/>
 
@@ -35,7 +35,7 @@
                     <x-slot:tabpanes>
 
                         <!-- start history tab pane -->
-                        <x-tabs.pane name="checkedout" class="in active">
+                        <x-tabs.pane name="assigned" class="in active">
                             <x-slot:header>
                                 {{ trans('general.checked_out') }}
                             </x-slot:header>
@@ -93,35 +93,10 @@
 
                     <x-slot:before_list>
 
-                        @can('update', $accessory)
-                            <x-button.wide-edit :item="$accessory" :route="route('accessories.edit', $accessory->id)" />
-
-                            <a href="{{ route('clone/accessories', $accessory->id) }}" class="btn btn-info btn-block btn-sm btn-social hidden-print" style="margin-bottom: 5px;">
-                                <x-icon type="clone" />
-                                {{ trans('button.clone') }}</a>
-                        @endcan
-
-                        @can('checkout', $accessory)
-
-                            @if (($accessory->numRemaining() > 0))
-                                    <x-button.wide-checkout :item="$accessory" :route="route('accessories.checkout.show', $accessory->id)" />
-                            @else
-                                <span data-tooltip="true" title="{{ ($accessory->numRemaining() == 0) ? trans('admin/accessories/general.bulk.checkout_all.disabled_tooltip') : trans('admin/accessories/message.checkout.license_is_inactive') }}" class="btn bg-maroon btn-sm btn-social btn-block hidden-print disabled" style="margin-bottom: 5px;" data-tooltip="true" title="{{ trans('general.checkout') }}">
-                                    <x-icon type="checkout" />
-                                    {{ trans('general.checkout') }}
-                                  </span>
-
-                            @endif
-                        @endcan
-
-
-
-                        @can('delete', $accessory)
-                                <x-button.wide-delete :item="$accessory" :route="route('accessories.destroy', $accessory->id)" />
-                        @endcan
-
-
-
+                        <x-button.wide-checkout :item="$accessory" :route="route('accessories.checkout.show', $accessory->id)" />
+                        <x-button.wide-edit :item="$accessory" :route="route('accessories.edit', $accessory->id)" />
+                        <x-button.wide-clone :item="$accessory" :route="route('clone/accessories', $accessory->id)" />
+                        <x-button.wide-delete :item="$accessory" />
 
                     </x-slot:before_list>
                 </x-box.info-panel>

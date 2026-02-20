@@ -1943,6 +1943,14 @@
 
         <script nonce="{{ csrf_token() }}">
 
+            // Handle the first selected tabs regardless of permissions
+            if ($('li.snipetab').is(':first-of-type')) {
+                var hash = $('li.snipetab:first-of-type').children().attr('href');
+                $('li.snipetab:first-of-type').addClass('active');
+                $('div'+hash+'.snipetab-pane').addClass('in active');
+            }
+
+
             //color picker with addon
             $(".color").colorpicker();
 
@@ -2085,6 +2093,7 @@
                 format: "yyyy-mm-dd",
                 weekStart: {{ $snipeSettings->week_start ?? 0 }},
             };
+
 
             var clipboard = new ClipboardJS('.js-copy-link');
 

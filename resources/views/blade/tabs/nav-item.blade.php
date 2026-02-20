@@ -9,7 +9,7 @@
 ])
 
 <!-- start tab nav item -->
-<li {{ $attributes->merge(['class' => '']) }}>
+<li {{ $attributes->merge(['class' => 'snipetab']) }}>
 
     <a href="#{{ $name ?? 'info' }}" data-toggle="tab" data-tooltip="true" title="{{ $tooltip ?? $label }}">
 
