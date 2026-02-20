@@ -1180,7 +1180,7 @@
                                         @can('viewRequestable', \App\Models\Asset::class)
                                             <li {!! (request()->is('account/requested') ? ' class="active"' : '') !!}>
                                                 <a href="{{ route('account.requested') }}">
-                                                    <x-icon type="checkmark" class="fa-fw" />
+                                                    <x-icon type="requested" class="fa-fw" />
                                                     {{ trans('general.requested_assets_menu') }}
                                                 </a></li>
                                         @endcan
@@ -1917,6 +1917,14 @@
 
         <script nonce="{{ csrf_token() }}">
 
+            // Handle the first selected tabs regardless of permissions
+            if ($('li.snipetab').is(':first-of-type')) {
+                var hash = $('li.snipetab:first-of-type').children().attr('href');
+                $('li.snipetab:first-of-type').addClass('active');
+                $('div'+hash+'.snipetab-pane').addClass('in active');
+            }
+
+
             //color picker with addon
             $(".color").colorpicker();
 
@@ -2059,6 +2067,7 @@
                 format: "yyyy-mm-dd",
                 weekStart: {{ $snipeSettings->week_start ?? 0 }},
             };
+
 
             var clipboard = new ClipboardJS('.js-copy-link');
 

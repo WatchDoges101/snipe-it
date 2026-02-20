@@ -43,13 +43,11 @@
 
         @if ($infoPanelObj->serial)
             @can('viewKeys', $infoPanelObj)
-                <x-info-element>
-                    <x-copy-to-clipboard copy_what="license_key">
+                <x-info-element icon_type="number">
+                    <x-copy-to-clipboard class="pull-right" copy_what="license_key">
                         <code>{{ $infoPanelObj->serial }}</code>
                     </x-copy-to-clipboard>
                 </x-info-element>
-            @else
-                ------------
             @endcan
         @endif
 
