@@ -48,6 +48,8 @@
                         <code>{{ $infoPanelObj->serial }}</code>
                     </x-copy-to-clipboard>
                 </x-info-element>
+            @else
+                ------------
             @endcan
         @endif
 
