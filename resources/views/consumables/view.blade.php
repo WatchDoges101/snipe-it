@@ -21,11 +21,10 @@
                 <x-slot:tabnav>
 
                     <x-tabs.nav-item
-                            name="assigned"
+                            name="assigned_history"
                             class="active"
                             icon_type="checkedout"
-                            label="{{ trans('general.assigned') }}"
-                            count="{{ $consumable->numCheckedOut() }}"
+                            label="Assigned History"
                     />
 
                     <x-tabs.files-tab count="{{ $consumable->uploads()->count() }}" />
@@ -40,12 +39,13 @@
 
                 <x-slot:tabpanes>
 
-                    <x-tabs.pane name="assigned" class="in active">
+                    <x-tabs.pane name="assigned_history" class="in active">
 
                         <x-slot:content>
                             <x-table
-                                    :presenter="\App\Presenters\ConsumablePresenter::checkedOut()"
-                                    :api_url="route('api.consumables.show.users', $consumable->id)"
+                                    name="consumableAssignedHistory"
+                                    api_url="{{ route('api.consumables.assignment_history', $consumable->id) }}"
+                                    :presenter="\App\Presenters\HistoryPresenter::dataTableLayout()"
                             />
                         </x-slot:content>
 

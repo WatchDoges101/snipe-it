@@ -291,6 +291,13 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'api-throttle:api']], fu
             ]
         )->name('api.consumables.show.users');
 
+        Route::get('{id}/assignment-history',
+            [
+                Api\ConsumablesController::class,
+                'getAssignmentHistory'
+            ]
+        )->name('api.consumables.assignment_history');
+
 
         Route::post('{consumable}/checkout',
             [

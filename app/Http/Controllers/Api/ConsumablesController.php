@@ -6,8 +6,10 @@ use App\Events\CheckoutableCheckedOut;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreConsumableRequest;
+use App\Http\Transformers\ActionlogsTransformer;
 use App\Http\Transformers\ConsumablesTransformer;
 use App\Http\Transformers\SelectlistTransformer;
+use App\Models\Actionlog;
 use App\Models\Company;
 use App\Models\Consumable;
 use App\Models\User;
@@ -273,6 +275,57 @@ class ConsumablesController extends Controller
         $data = ['total' => $consumableCount, 'rows' => $rows];
 
         return $data;
+    }
+
+    /**
+    * Returns a JSON response containing checkout history for this consumable.
+    */
+    public function getAssignmentHistory(Request $request, $consumableId) : JsonResponse | array
+    {
+        $consumable = Consumable::findOrFail($consumableId);
+
+        if (! Company::isCurrentUserHasAccess($consumable)) {
+            return ['total' => 0, 'rows' => []];
+        }
+
+        $this->authorize('view', Consumable::class);
+
+        $actionlogs = Actionlog::with('item', 'user', 'adminuser', 'target', 'location')
+            ->where('item_id', '=', $consumableId)
+            ->where('item_type', '=', Consumable::class)
+            ->where('action_type', '=', 'checkout');
+
+        if ($request->filled('search')) {
+            $actionlogs = $actionlogs->TextSearch(e($request->input('search')));
+        }
+
+        $allowedColumns = [
+            'id',
+            'created_at',
+            'created_by',
+            'action_type',
+            'note',
+            'action_date',
+        ];
+
+        $total = $actionlogs->count();
+        $offset = ($request->input('offset') > $total) ? $total : app('api_offset_value');
+        $limit = app('api_limit_value');
+        $order = ($request->input('order') == 'asc') ? 'asc' : 'desc';
+
+        switch ($request->input('sort')) {
+            case 'created_by':
+                $actionlogs->OrderByCreatedBy($order);
+                break;
+            default:
+                $sort = in_array($request->input('sort'), $allowedColumns) ? e($request->input('sort')) : 'action_logs.created_at';
+                $actionlogs = $actionlogs->orderBy($sort, $order);
+                break;
+        }
+
+        $actionlogs = $actionlogs->skip($offset)->take($limit)->get();
+
+        return response()->json((new ActionlogsTransformer)->transformActionlogs($actionlogs, $total), 200, ['Content-Type' => 'application/json;charset=utf8'], JSON_UNESCAPED_UNICODE);
     }
 
     /**

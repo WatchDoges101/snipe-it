@@ -57,7 +57,11 @@ class ConsumablesTransformer
             'remaining'  => $consumable->numRemaining(),
             'order_number'  => e($consumable->order_number),
             'purchase_cost'  => Helper::formatCurrencyOutput($consumable->purchase_cost),
-            'total_cost' => Helper::formatCurrencyOutput($consumable->totalCostSum()),
+            'total_cost' => Helper::formatCurrencyOutput(
+                $consumable->purchase_cost !== null
+                    ? $consumable->numCheckedOut() * $consumable->purchase_cost
+                    : null
+            ),
             'purchase_date'  => Helper::getFormattedDateObject($consumable->purchase_date, 'date'),
             'qty'           => (int) $consumable->qty,
             'notes'         => ($consumable->notes) ? Helper::parseEscapedMarkedownInline($consumable->notes) : null,

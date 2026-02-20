@@ -13,6 +13,7 @@ use App\Presenters\Presentable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Watson\Validating\ValidatingTrait;
@@ -322,8 +323,19 @@ class Consumable extends SnipeModel
         return $remaining;
     }
     public function totalCostSum() {
+        return $this->purchase_cost !== null ? $this->numCheckedOut() * $this->purchase_cost : null;
+    }
 
-        return $this->purchase_cost !== null ? $this->qty * $this->purchase_cost : null;
+    public function numConsumablesUsed(): int
+    {
+        return (int) $this->assetlog()
+            ->where('action_type', '=', 'checkout')
+            ->sum(DB::raw('COALESCE(quantity, 1)'));
+    }
+
+    public function totalCostUsedSum()
+    {
+        return $this->purchase_cost !== null ? $this->numConsumablesUsed() * $this->purchase_cost : null;
     }
     /**
      * Get the list of checkouts for this consumable
