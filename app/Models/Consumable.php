@@ -164,6 +164,14 @@ class Consumable extends SnipeModel
         return $this->hasMany(ConsumableAssignment::class);
     }
 
+    public function assets()
+    {
+        return $this->belongsToMany(Asset::class, 'consumables_users', 'consumable_id', 'assigned_to')
+            ->wherePivot('assigned_type', Asset::class)
+            ->withPivot('id', 'created_at', 'note', 'assigned_type')
+            ->withTrashed();
+    }
+
     /**
      * Establishes the component -> company relationship
      *
@@ -254,7 +262,11 @@ class Consumable extends SnipeModel
      */
     public function users() : Relation
     {
-        return $this->belongsToMany(User::class, 'consumables_users', 'consumable_id', 'assigned_to')->withPivot('created_by')->withTrashed()->withTimestamps();
+        return $this->belongsToMany(User::class, 'consumables_users', 'consumable_id', 'assigned_to')
+            ->wherePivot('assigned_type', User::class)
+            ->withPivot('created_by', 'assigned_type')
+            ->withTrashed()
+            ->withTimestamps();
     }
 
     /**
@@ -304,7 +316,7 @@ class Consumable extends SnipeModel
      */
     public function numCheckedOut()
     {
-        return $this->consumables_users_count ?? $this->users()->count();
+        return $this->consumables_users_count ?? $this->consumableAssignments()->count();
     }
 
     /**

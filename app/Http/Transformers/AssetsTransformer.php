@@ -6,6 +6,7 @@ use App\Helpers\Helper;
 use App\Models\Accessory;
 use App\Models\AccessoryCheckout;
 use App\Models\Asset;
+use App\Models\ConsumableAssignment;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Collection;
@@ -343,6 +344,40 @@ class AssetsTransformer
             $array += $permissions_array;
             return $array;
         }
+    }
+
+    public function transformCheckedoutConsumables($consumable_assignments, $total)
+    {
+
+        $array = [];
+        foreach ($consumable_assignments as $assignment) {
+            $array[] = self::transformCheckedoutConsumable($assignment);
+        }
+
+        return (new DatatablesTransformer)->transformDatatables($array, $total);
+    }
+
+    public function transformCheckedoutConsumable(ConsumableAssignment $consumable_assignment)
+    {
+        if ($consumable_assignment->consumable) {
+            return [
+                'id' => $consumable_assignment->id,
+                'consumable' => [
+                    'id' => $consumable_assignment->consumable->id,
+                    'name' => $consumable_assignment->consumable->name,
+                ],
+                'assigned_to' => $consumable_assignment->assigned_to,
+                'image' => $consumable_assignment->consumable->getImageUrl() ?: null,
+                'note' => $consumable_assignment->note ? e($consumable_assignment->note) : null,
+                'created_by' => $consumable_assignment->adminuser ? [
+                    'id' => (int) $consumable_assignment->adminuser->id,
+                    'name' => e($consumable_assignment->adminuser->present()->fullName),
+                ] : null,
+                'created_at' => Helper::getFormattedDateObject($consumable_assignment->created_at, 'datetime'),
+            ];
+        }
+
+        return [];
     }
 
 }

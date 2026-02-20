@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\CheckoutableCheckedOut;
 use App\Helpers\Helper;
+use App\Http\Controllers\CheckInOutRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreConsumableRequest;
 use App\Http\Transformers\ActionlogsTransformer;
 use App\Http\Transformers\ConsumablesTransformer;
 use App\Http\Transformers\SelectlistTransformer;
 use App\Models\Actionlog;
+use App\Models\Asset;
 use App\Models\Company;
 use App\Models\Consumable;
 use App\Models\User;
@@ -20,6 +22,8 @@ use Illuminate\Http\JsonResponse;
 
 class ConsumablesController extends Controller
 {
+    use CheckInOutRequest;
+
     /**
      * Display a listing of the resource.
      *
@@ -31,7 +35,7 @@ class ConsumablesController extends Controller
         $this->authorize('index', Consumable::class);
 
         $consumables = Consumable::with('company', 'location', 'category', 'supplier', 'manufacturer')
-            ->withCount('users as consumables_users_count');
+            ->withCount('consumableAssignments as consumables_users_count');
 
         // This array is what determines which fields should be allowed to be sorted on ON the table itself.
         // These must match a column on the consumables table directly.
@@ -244,6 +248,7 @@ class ConsumablesController extends Controller
     public function getDataView($consumableId) : array
     {
         $consumable = Consumable::with(['consumableAssignments'=> function ($query) {
+            $query->UserAssigned();
             $query->orderBy($query->getModel()->getTable().'.created_at', 'DESC');
         },
         'consumableAssignments.adminuser'=> function ($query) {
@@ -347,7 +352,7 @@ class ConsumablesController extends Controller
 
         $this->authorize('checkout', $consumable);
 
-        $consumable->checkout_qty = $request->input('checkout_qty', 1);
+        $consumable->checkout_qty = (int) $request->input('checkout_qty', 1);
 
         // Make sure there is at least one available to checkout
         if ($consumable->numRemaining() <= 0) {
@@ -366,29 +371,45 @@ class ConsumablesController extends Controller
 
 
 
-        // Check if the user exists - @TODO:  this should probably be handled via validation, not here??
-        if (!$user = User::find($request->input('assigned_to'))) {
-            // Return error message
-            return response()->json(Helper::formatStandardApiResponse('error', null, 'No user found'));
+        $target = null;
+
+        if ($request->filled('checkout_to_type')) {
+            $target = $this->determineCheckoutTarget();
+        } elseif ($request->filled('assigned_user') || $request->filled('assigned_asset')) {
+            if ($request->filled('assigned_asset')) {
+                $target = Asset::find($request->input('assigned_asset'));
+                $request->request->add(['checkout_to_type' => 'asset']);
+            } else {
+                $target = User::find($request->input('assigned_user'));
+                $request->request->add(['checkout_to_type' => 'user']);
+            }
+        } elseif ($request->filled('assigned_to')) {
+            $target = User::find($request->input('assigned_to'));
+            $request->request->add([
+                'checkout_to_type' => 'user',
+                'assigned_user' => $request->input('assigned_to'),
+            ]);
         }
 
-        // Update the consumable data
-        $consumable->assigned_to = $request->input('assigned_to');
+        if (!$target) {
+            return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.user_does_not_exist')));
+        }
+
+        $consumable->assigned_to = $target->id;
 
         for ($i = 0; $i < $consumable->checkout_qty; $i++) {
-            $consumable->users()->attach($consumable->id,
-                [
-                    'consumable_id' => $consumable->id,
-                    'created_by' => $user->id,
-                    'assigned_to' => $request->input('assigned_to'),
-                    'note' => $request->input('note'),
-                ]
-            );
+            $consumable->consumableAssignments()->create([
+                'consumable_id' => $consumable->id,
+                'created_by' => auth()->id(),
+                'assigned_to' => $target->id,
+                'assigned_type' => $target::class,
+                'note' => $request->input('note'),
+            ]);
         }
 
         event(new CheckoutableCheckedOut(
             $consumable,
-            $user,
+            $target,
             auth()->user(),
             $request->input('note'),
             [],

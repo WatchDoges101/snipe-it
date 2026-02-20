@@ -480,7 +480,10 @@ class User extends SnipeModel implements AuthenticatableContract, AuthorizableCo
      */
     public function consumables()
     {
-        return $this->belongsToMany(\App\Models\Consumable::class, 'consumables_users', 'assigned_to', 'consumable_id')->withPivot('id', 'created_at', 'note')->withTrashed();
+        return $this->belongsToMany(\App\Models\Consumable::class, 'consumables_users', 'assigned_to', 'consumable_id')
+            ->where('assigned_type', '=', \App\Models\User::class)
+            ->withPivot('id', 'created_at', 'note', 'assigned_type')
+            ->withTrashed();
     }
 
     /**

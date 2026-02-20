@@ -114,6 +114,18 @@
                         </li>
                     @endif
 
+                    <li>
+                        <a href="#consumables_assigned" data-toggle="tab" data-tooltip="true">
+                            <span class="hidden-lg hidden-md">
+                                <x-icon type="consumables" class="fa-2x" />
+                            </span>
+                            <span class="hidden-xs hidden-sm">
+                                {{ trans('general.consumables') }}
+                            </span>
+                            {!! ($asset->assignedConsumables()->count() > 0 ) ? '<span class="badge badge-secondary">'.number_format($asset->assignedConsumables()->count()).'</span>' : '' !!}
+                        </a>
+                    </li>
+
 
                     @if ($asset->audits->count() > 0)
                     <li>
@@ -1317,6 +1329,30 @@
                                   "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
                                   }'>
                             </table>
+
+                    </div><!-- /.tab-pane -->
+
+
+                    <div class="tab-pane" id="consumables_assigned">
+
+                        <h2 class="box-title" style="float:left">
+                            {{ trans('general.consumables') }}
+                        </h2>
+
+                        <table
+                                data-columns="{{ \App\Presenters\AssetPresenter::assignedConsumablesDataTableLayout() }}"
+                                data-cookie-id-table="consumablesAssignedListingTable"
+                                data-id-table="consumablesAssignedListingTable"
+                                data-side-pagination="server"
+                                data-sort-order="asc"
+                                id="consumablesAssignedListingTable"
+                                class="table table-striped snipe-table"
+                                data-url="{{ route('api.assets.assigned_consumables', ['asset' => $asset]) }}"
+                                data-export-options='{
+                              "fileName": "export-assets-{{ str_slug($asset->name) }}-consumables-{{ date('Y-m-d') }}",
+                              "ignoreColumn": ["actions","image","change","checkbox","checkincheckout","icon"]
+                              }'>
+                        </table>
 
                     </div><!-- /.tab-pane -->
 
