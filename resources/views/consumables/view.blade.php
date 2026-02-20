@@ -88,7 +88,7 @@
                         <x-button.wide-checkout :item="$consumable" :route="route('consumables.checkout.show', $consumable->id)" />
                         <x-button.wide-edit :item="$consumable" :route="route('consumables.edit', $consumable->id)" />
                         @can('update', $consumable)
-                            <a href="{{ route('consumables.reset.show', $consumable->id) }}" class="btn btn-block btn-sm btn-success btn-social hidden-print" title="Replenish">
+                            <a href="{{ route('consumables.reset.show', $consumable->id) }}" class="btn btn-block btn-sm btn-success btn-social hidden-print" title="Replenish Supply">
                                 <i class="fa-solid fa-arrow-rotate-left"></i> Replenish
                             </a>
                         @endcan
