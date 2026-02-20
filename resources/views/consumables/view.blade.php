@@ -45,7 +45,8 @@
                             <x-table
                                     name="consumableAssignedHistory"
                                     api_url="{{ route('api.consumables.assignment_history', $consumable->id) }}"
-                                    :presenter="\App\Presenters\HistoryPresenter::dataTableLayout()"
+                                    :presenter="\App\Presenters\ConsumablePresenter::assignedHistoryLayout()"
+                                    :show_columns="false"
                             />
                         </x-slot:content>
 

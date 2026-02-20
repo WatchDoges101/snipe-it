@@ -239,6 +239,75 @@ class ConsumablePresenter extends Presenter
         return json_encode($layout);
     }
 
+    public static function assignedHistoryLayout()
+    {
+        $layout = [
+            [
+                'field' => 'icon',
+                'searchable' => false,
+                'sortable' => true,
+                'switchable' => false,
+                'title' => trans('admin/hardware/table.icon'),
+                'visible' => true,
+                'formatter' => 'iconFormatter',
+            ],
+            [
+                'field' => 'created_by',
+                'searchable' => true,
+                'sortable' => true,
+                'switchable' => false,
+                'title' => trans('general.created_by'),
+                'visible' => true,
+                'formatter' => 'usersLinkObjFormatter',
+            ],
+            [
+                'field' => 'action_date',
+                'searchable' => false,
+                'sortable' => true,
+                'switchable' => false,
+                'title' => trans('general.action_date'),
+                'visible' => true,
+                'formatter' => 'dateDisplayFormatter',
+            ],
+            [
+                'field' => 'action_type',
+                'searchable' => true,
+                'sortable' => true,
+                'switchable' => false,
+                'title' => trans('general.action'),
+                'visible' => true,
+            ],
+            [
+                'field' => 'item',
+                'searchable' => true,
+                'sortable' => true,
+                'switchable' => false,
+                'title' => trans('general.item'),
+                'visible' => true,
+                'formatter' => 'polymorphicItemFormatter',
+            ],
+            [
+                'field' => 'target',
+                'searchable' => true,
+                'sortable' => true,
+                'switchable' => false,
+                'title' => trans('general.target'),
+                'visible' => true,
+                'formatter' => 'polymorphicItemFormatter',
+            ],
+            [
+                'field' => 'quantity',
+                'searchable' => false,
+                'sortable' => true,
+                'switchable' => false,
+                'title' => trans('general.quantity'),
+                'visible' => true,
+            ],
+        ];
+
+        return json_encode($layout);
+    }
+
     /**
      * Url to view this item.
      * @return string

@@ -4,6 +4,7 @@
     'export_filename' => 'export-'.date('Y-m-d'),
     'api_url' => null,
     'show_column_search' => false,
+    'show_columns' => true,
     'show_advanced_search' => false,
     'fixed_number' => false,
     'fixed_right_number' => false,
@@ -25,6 +26,7 @@
     data-bulk-form-id="#{{ Illuminate\Support\Str::camel($name) }}Form"
     id="{{ $name }}ListingTable"
     data-show-columns-search="{{ $show_column_search }}"
+    data-show-columns="{{ $show_columns }}"
     data-show-advanced-search="{{ $show_advanced_search }}"
     data-footer-style="footerStyle"
     data-show-footer="true"
