@@ -47,7 +47,7 @@ class ActionlogPresenter extends Presenter
     {
 
         if ($this->isConsumableReset()) {
-            return 'fa-solid fa-arrow-rotate-left';
+            return 'fa-solid fa-boxes-stacked';
         }
 
         // User related icons

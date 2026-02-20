@@ -1087,7 +1087,7 @@
             }
 
             if ((row.available_actions) && (row.available_actions.reset === true)) {
-                actions += '<a href="{{ config('app.url') }}/' + dest + '/' + row.id + '/reset" class="actions btn btn-sm btn-success" data-tooltip="true" title="Replenish Supply"><i class="fa-solid fa-arrow-rotate-left fa-fw"></i><span class="sr-only">{{ trans('admin/consumables/form.replenish') }}</span></a>&nbsp;';
+                actions += '<a href="{{ config('app.url') }}/' + dest + '/' + row.id + '/reset" class="actions btn btn-sm btn-primary" data-tooltip="true" title="Replenish Supply"><i class="fa-solid fa-boxes-stacked fa-fw"></i><span class="sr-only">{{ trans('admin/consumables/form.replenish') }}</span></a>&nbsp;';
             }
 
             if ((row.available_actions) && (row.available_actions.delete === true)) {
