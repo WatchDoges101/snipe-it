@@ -23,6 +23,13 @@
     </div>
 
     <div class="form-group">
+        <label class="col-md-3 control-label">{{ trans('general.order_number') }}</label>
+        <div class="col-md-7 col-sm-12">
+            <input type="text" name="order_number" class="form-control" value="{{ old('order_number') }}" />
+        </div>
+    </div>
+
+    <div class="form-group">
         <label class="col-md-3 control-label">{{ trans('general.note') }}</label>
         <div class="col-md-7 col-sm-12">
             <textarea name="note" class="form-control" rows="4"></textarea>

@@ -260,6 +260,7 @@ class ConsumablesController extends Controller
 
         $request->validate([
             'qty' => "required|integer|min:1|max:$maxReplenish",
+            'order_number' => 'nullable|string|max:255',
             'note' => 'nullable|string',
         ]);
 
@@ -279,7 +280,9 @@ class ConsumablesController extends Controller
         $log = new Actionlog();
         $log->item()->associate($consumable);
         $log->action_type = 'update';
+        $orderNumberNote = $request->filled('order_number') ? "\nOrder Number: ".$request->input('order_number') : '';
         $log->note = 'Consumable replenished (qty: '.$replenishQty.'): remaining changed from '.$remainingBefore.' to '.$remainingAfter.' (total: '.$totalQty.').'
+            . $orderNumberNote
             . ($request->input('note') ? "\n" . $request->input('note') : '');
         $log->created_by = auth()->id();
         $log->save();
@@ -324,6 +327,7 @@ class ConsumablesController extends Controller
 
         $request->validate([
             'qty' => 'required|integer|min:1',
+            'order_number' => 'nullable|string|max:255',
             'note' => 'nullable|string',
         ]);
 
@@ -335,7 +339,8 @@ class ConsumablesController extends Controller
         $log = new \App\Models\Actionlog();
         $log->item()->associate($consumable);
         $log->action_type = 'update';
-        $log->note = trans('admin/consumables/message.replenished', ['qty' => $add]) . ($request->input('note') ? '\n' . $request->input('note') : '');
+        $orderNumberNote = $request->filled('order_number') ? "\nOrder Number: ".$request->input('order_number') : '';
+        $log->note = trans('admin/consumables/message.replenished', ['qty' => $add]) . $orderNumberNote . ($request->input('note') ? '\n' . $request->input('note') : '');
         $log->created_by = auth()->id();
         $log->save();
 
