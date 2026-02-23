@@ -58,7 +58,7 @@ class AccessoryCheckout extends Model
      */
     public function adminuser()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by')->withTrashed();
     }
 
     /**
