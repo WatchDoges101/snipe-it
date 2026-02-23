@@ -347,7 +347,44 @@ class Consumable extends SnipeModel
 
     public function totalCostUsedSum()
     {
+        $replenishCostTotal = $this->replenishTotalCostSum();
+
+        if ($replenishCostTotal !== null) {
+            return $replenishCostTotal;
+        }
+
         return $this->purchase_cost !== null ? $this->numConsumablesUsed() * $this->purchase_cost : null;
+    }
+
+    public function replenishTotalCostSum(): ?float
+    {
+        $replenishLogs = $this->assetlog()
+            ->where('action_type', '=', 'update')
+            ->where('note', 'like', 'Consumable replenished%')
+            ->whereNotNull('log_meta')
+            ->get(['log_meta']);
+
+        $total = 0.0;
+        $hasReplenishCosts = false;
+
+        foreach ($replenishLogs as $replenishLog) {
+            $meta = json_decode($replenishLog->log_meta, true);
+
+            if (!is_array($meta)) {
+                continue;
+            }
+
+            $replenishTotal = data_get($meta, 'replenish_total_cost.new');
+
+            if (!is_numeric($replenishTotal)) {
+                continue;
+            }
+
+            $total += (float) $replenishTotal;
+            $hasReplenishCosts = true;
+        }
+
+        return $hasReplenishCosts ? $total : null;
     }
     /**
      * Get the list of checkouts for this consumable

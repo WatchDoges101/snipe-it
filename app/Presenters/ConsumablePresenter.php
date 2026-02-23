@@ -258,6 +258,7 @@ class ConsumablePresenter extends Presenter
             self::assignedHistoryItemColumn(),
             self::assignedHistoryTargetColumn(),
             self::assignedHistoryQuantityColumn(),
+            self::assignedHistoryNotesColumn(),
         ]);
     }
 
@@ -347,6 +348,19 @@ class ConsumablePresenter extends Presenter
             'switchable' => false,
             'title' => trans('general.quantity'),
             'visible' => true,
+        ];
+    }
+
+    private static function assignedHistoryNotesColumn(): array
+    {
+        return [
+            'field' => 'note',
+            'searchable' => true,
+            'sortable' => true,
+            'switchable' => false,
+            'title' => trans('general.notes'),
+            'visible' => true,
+            'formatter' => 'notesFormatter',
         ];
     }
 

@@ -277,8 +277,17 @@ class ConsumablesController extends Controller
 
         ConsumableAssignment::whereIn('id', $assignmentIds)->delete();
 
-        $consumable->supplier_id = $request->input('supplier_id');
-        $consumable->purchase_cost = $request->filled('purchase_cost') ? Helper::ParseFloat($request->input('purchase_cost')) : null;
+        $unitCostAtReplenish = $request->filled('purchase_cost') ? Helper::ParseFloat($request->input('purchase_cost')) : null;
+        $replenishTotalCost = $unitCostAtReplenish !== null ? $replenishQty * $unitCostAtReplenish : null;
+        $supplierIdAtReplenish = $request->input('supplier_id');
+        $supplierNameAtReplenish = null;
+
+        if ($supplierIdAtReplenish) {
+            $supplierNameAtReplenish = \App\Models\Supplier::select('name')->find($supplierIdAtReplenish)?->name;
+        }
+
+        $consumable->supplier_id = $supplierIdAtReplenish;
+        $consumable->purchase_cost = $unitCostAtReplenish;
         $consumable->save();
 
         $remainingAfter = (int) $consumable->numRemaining();
@@ -286,10 +295,32 @@ class ConsumablesController extends Controller
         $log = new Actionlog();
         $log->item()->associate($consumable);
         $log->action_type = 'update';
+        $log->quantity = $replenishQty;
         $orderNumberNote = $request->filled('order_number') ? "\nOrder Number: ".$request->input('order_number') : '';
         $log->note = 'Consumable replenished (qty: '.$replenishQty.'): remaining changed from '.$remainingBefore.' to '.$remainingAfter.' (total: '.$totalQty.').'
             . $orderNumberNote
+            . ($supplierNameAtReplenish ? "\nSupplier: ".$supplierNameAtReplenish : '')
+            . ($unitCostAtReplenish !== null ? "\nReplenish Unit Cost: ".Helper::formatCurrencyOutput($unitCostAtReplenish) : '')
+            . ($replenishTotalCost !== null ? "\nReplenish Total Cost: ".Helper::formatCurrencyOutput($replenishTotalCost) : '')
             . ($request->input('note') ? "\n" . $request->input('note') : '');
+        $log->log_meta = json_encode([
+            'replenish_supplier_id' => [
+                'old' => null,
+                'new' => $supplierIdAtReplenish,
+            ],
+            'replenish_supplier_name' => [
+                'old' => null,
+                'new' => $supplierNameAtReplenish,
+            ],
+            'replenish_unit_cost' => [
+                'old' => null,
+                'new' => $unitCostAtReplenish,
+            ],
+            'replenish_total_cost' => [
+                'old' => null,
+                'new' => $replenishTotalCost,
+            ],
+        ]);
         $log->created_by = auth()->id();
         $log->save();
 
