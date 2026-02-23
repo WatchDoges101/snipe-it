@@ -289,13 +289,7 @@ class ConsumablesController extends Controller
         $actionlogs = Actionlog::with('item', 'user', 'adminuser', 'target', 'location')
             ->where('item_id', '=', $consumable->id)
             ->where('item_type', '=', Consumable::class)
-            ->where(function ($query) {
-                $query->where('action_type', '=', 'checkout')
-                    ->orWhere(function ($replenishQuery) {
-                        $replenishQuery->where('action_type', '=', 'update')
-                            ->where('note', 'like', 'Consumable replenished%');
-                    });
-            });
+            ->where('action_type', '=', 'checkout');
 
         if ($request->filled('search')) {
             $actionlogs = $actionlogs->TextSearch($request->input('search'));
