@@ -15,7 +15,7 @@
 
 @section('inputFields')
     <div class="form-group required">
-        <label class="col-md-3 control-label">{{ trans('admin/consumables/general.qty_to_replenish') }}</label>
+        <label class="col-md-3 control-label">{{ trans('admin/consumables/general.qty_to_replenish') === 'admin/consumables/general.qty_to_replenish' ? 'QTY to Replenish' : trans('admin/consumables/general.qty_to_replenish') }}</label>
         <div class="col-md-7 col-sm-12">
             <input
                 type="number"
@@ -32,9 +32,12 @@
 
     <div class="form-group">
         <div class="col-md-7 col-sm-12 col-md-offset-3">
-            <p class="help-block">{{ trans('admin/consumables/general.replenish_selected_qty_help') }}</p>
+            <p class="help-block">{{ trans('admin/consumables/general.replenish_selected_qty_help') === 'admin/consumables/general.replenish_selected_qty_help' ? 'Press save to replenish the selected quantity back into available stock.' : trans('admin/consumables/general.replenish_selected_qty_help') }}</p>
         </div>
     </div>
+
+    @include ('partials.forms.edit.supplier-select', ['translated_name' => trans('general.supplier'), 'fieldname' => 'supplier_id'])
+    @include ('partials.forms.edit.purchase_cost', [ 'unit_cost' => trans('general.unit_cost')])
 
     <div class="form-group">
         <label class="col-md-3 control-label">{{ trans('general.order_number') }}</label>
@@ -44,7 +47,7 @@
     </div>
 
     <div class="form-group">
-        <label class="col-md-3 control-label">{{ trans('admin/consumables/general.general_note') }}</label>
+        <label class="col-md-3 control-label">{{ trans('admin/consumables/general.general_note') === 'admin/consumables/general.general_note' ? 'General Note' : trans('admin/consumables/general.general_note') }}</label>
         <div class="col-md-7 col-sm-12">
             <textarea name="note" class="form-control" rows="4"></textarea>
         </div>

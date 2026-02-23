@@ -1087,7 +1087,7 @@
             }
 
             if ((row.available_actions) && (row.available_actions.reset === true)) {
-                actions += '<a href="{{ config('app.url') }}/' + dest + '/' + row.id + '/reset" class="actions btn btn-sm btn-primary btn-reset" data-tooltip="true" title="{{ trans('admin/consumables/general.replenish') }}" data-modal-title="{{ trans('admin/consumables/general.replenish') }}" data-help="{{ trans('admin/consumables/general.replenish_help') }}" data-fail-message="{{ trans('admin/consumables/message.replenish.error') }}"><i class="fa-solid fa-boxes-stacked fa-fw"></i><span class="sr-only">{{ trans('admin/consumables/general.replenish') }}</span></a>&nbsp;';
+                actions += '<a href="{{ config('app.url') }}/' + dest + '/' + row.id + '/reset" class="actions btn btn-sm btn-primary btn-reset" data-tooltip="true" title="Replenish" data-modal-title="{{ trans('admin/consumables/general.replenish') }}" data-help="{{ trans('admin/consumables/general.replenish_help') }}" data-fail-message="{{ trans('admin/consumables/message.replenish.error') }}"><x-icon type="replenish" class="fa-fw" /><span class="sr-only">{{ trans('admin/consumables/general.replenish') }}</span></a>&nbsp;';
             }
 
             if ((row.available_actions) && (row.available_actions.delete === true)) {

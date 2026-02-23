@@ -260,6 +260,8 @@ class ConsumablesController extends Controller
 
         $request->validate([
             'qty' => "required|integer|min:1|max:$maxReplenish",
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'purchase_cost' => 'nullable|numeric|min:0|max:99999999999999999.99',
             'order_number' => 'nullable|string|max:255',
             'note' => 'nullable|string',
         ]);
@@ -274,6 +276,10 @@ class ConsumablesController extends Controller
             ->pluck('id');
 
         ConsumableAssignment::whereIn('id', $assignmentIds)->delete();
+
+        $consumable->supplier_id = $request->input('supplier_id');
+        $consumable->purchase_cost = $request->filled('purchase_cost') ? Helper::ParseFloat($request->input('purchase_cost')) : null;
+        $consumable->save();
 
         $remainingAfter = (int) $consumable->numRemaining();
 
@@ -293,10 +299,15 @@ class ConsumablesController extends Controller
             session()->put(['redirect_option' => $request->input('redirect_option')]);
         }
 
+        $successMessage = trans('admin/consumables/message.replenish.success');
+        if ($successMessage === 'admin/consumables/message.replenish.success') {
+            $successMessage = 'Replenish successful.';
+        }
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'status' => 'success',
-                'message' => trans('admin/consumables/message.replenish.success'),
+                'message' => $successMessage,
                 'data' => [
                     'id' => $consumable->id,
                     'qty' => $consumable->qty,
@@ -306,7 +317,7 @@ class ConsumablesController extends Controller
         }
 
         return Helper::getRedirectOption($request, $consumable->id, 'Consumables')
-            ->with('success', trans('admin/consumables/message.replenish.success'));
+            ->with('success', $successMessage);
     }
 
 }
