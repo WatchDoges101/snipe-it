@@ -12,7 +12,6 @@ use App\Http\Transformers\ConsumablesTransformer;
 use App\Http\Transformers\SelectlistTransformer;
 use App\Models\Actionlog;
 use App\Models\Asset;
-use App\Models\Company;
 use App\Models\Consumable;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -190,10 +189,10 @@ class ConsumablesController extends Controller
      * @author [A. Gianotto] [<snipe@snipe.net>]
      * @param  int $id
      */
-    public function show($id) : array
+    public function show(Consumable $consumable) : array
     {
         $this->authorize('view', Consumable::class);
-        $consumable = Consumable::with('users')->findOrFail($id);
+        $consumable->load('users');
 
         return (new ConsumablesTransformer)->transformConsumable($consumable);
     }
@@ -206,10 +205,9 @@ class ConsumablesController extends Controller
      * @param  \App\Http\Requests\ImageUploadRequest $request
      * @param  int $id
      */
-    public function update(StoreConsumableRequest $request, $id) : JsonResponse
+    public function update(StoreConsumableRequest $request, Consumable $consumable) : JsonResponse
     {
         $this->authorize('update', Consumable::class);
-        $consumable = Consumable::findOrFail($id);
         $consumable->fill($request->all());
         $consumable = $request->handleImages($consumable);
         
@@ -227,10 +225,9 @@ class ConsumablesController extends Controller
      * @since [v4.0]
      * @param  int $id
      */
-    public function destroy($id) : JsonResponse
+    public function destroy(Consumable $consumable) : JsonResponse
     {
         $this->authorize('delete', Consumable::class);
-        $consumable = Consumable::findOrFail($id);
         $this->authorize('delete', $consumable);
         $consumable->delete();
 
@@ -245,9 +242,9 @@ class ConsumablesController extends Controller
     * @since [v1.0]
     * @param int $consumableId
      */
-    public function getDataView($consumableId) : array
+    public function getDataView(Consumable $consumable) : array
     {
-        $consumable = Consumable::with(['consumableAssignments'=> function ($query) {
+        $consumable->load(['consumableAssignments'=> function ($query) {
             $query->UserAssigned();
             $query->orderBy($query->getModel()->getTable().'.created_at', 'DESC');
         },
@@ -255,11 +252,8 @@ class ConsumablesController extends Controller
         },
         'consumableAssignments.user'=> function ($query) {
         },
-        ])->find($consumableId);
+        ]);
 
-        if (! Company::isCurrentUserHasAccess($consumable)) {
-            return ['total' => 0, 'rows' => []];
-        }
         $this->authorize('view', Consumable::class);
         $rows = [];
 
@@ -288,23 +282,17 @@ class ConsumablesController extends Controller
     /**
     * Returns a JSON response containing checkout history for this consumable.
     */
-    public function getAssignmentHistory(Request $request, $consumableId) : JsonResponse | array
+    public function getAssignmentHistory(Request $request, Consumable $consumable) : JsonResponse | array
     {
-        $consumable = Consumable::findOrFail($consumableId);
-
-        if (! Company::isCurrentUserHasAccess($consumable)) {
-            return ['total' => 0, 'rows' => []];
-        }
-
         $this->authorize('view', Consumable::class);
 
         $actionlogs = Actionlog::with('item', 'user', 'adminuser', 'target', 'location')
-            ->where('item_id', '=', $consumableId)
+            ->where('item_id', '=', $consumable->id)
             ->where('item_type', '=', Consumable::class)
             ->where('action_type', '=', 'checkout');
 
         if ($request->filled('search')) {
-            $actionlogs = $actionlogs->TextSearch(e($request->input('search')));
+            $actionlogs = $actionlogs->TextSearch($request->input('search'));
         }
 
         $allowedColumns = [
@@ -326,7 +314,7 @@ class ConsumablesController extends Controller
                 $actionlogs->OrderByCreatedBy($order);
                 break;
             default:
-                $sort = in_array($request->input('sort'), $allowedColumns) ? e($request->input('sort')) : 'action_logs.created_at';
+                $sort = in_array($request->input('sort'), $allowedColumns) ? $request->input('sort') : 'action_logs.created_at';
                 $actionlogs = $actionlogs->orderBy($sort, $order);
                 break;
         }
@@ -343,12 +331,9 @@ class ConsumablesController extends Controller
      * @param int $id
      * @since [v4.9.5]
      */
-    public function checkout(Request $request, $id) : JsonResponse
+    public function checkout(Request $request, Consumable $consumable) : JsonResponse
     {
-        // Check if the consumable exists
-        if (!$consumable = Consumable::with('users')->find($id)) {
-            return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.does_not_exist')));
-        }
+        $consumable->load('users');
 
         $this->authorize('checkout', $consumable);
 

@@ -1230,14 +1230,14 @@
             success: function (resp) {
                 modal.modal('hide');
                 if (resp && resp.message) {
-                    if (window.toastr) { toastr.success(resp.message); } else { alert(resp.message); }
+                    alert(resp.message);
                 }
                 // refresh current page so all visible totals and remaining counts update immediately
                 setTimeout(function () { window.location.reload(); }, 300);
             },
             error: function (xhr) {
                 var msg = 'Replenish Fail';
-                if (window.toastr) { toastr.error(msg); } else { alert(msg); }
+                alert(msg);
             }
         });
     });

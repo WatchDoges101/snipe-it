@@ -284,14 +284,14 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'api-throttle:api']], fu
             ]
         )->name('api.consumables.selectlist');
 
-        Route::get('{id}/users',
+        Route::get('{consumable}/users',
             [
                 Api\ConsumablesController::class, 
                 'getDataView'
             ]
         )->name('api.consumables.show.users');
 
-        Route::get('{id}/assignment-history',
+        Route::get('{consumable}/assignment-history',
             [
                 Api\ConsumablesController::class,
                 'getAssignmentHistory'
@@ -319,7 +319,6 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'api-throttle:api']], fu
                 'destroy' => 'api.consumables.destroy',
             ],
         'except' => ['create', 'edit'],
-        'parameters' => ['consumable' => 'consumable_id'],
         ]
         ); // end consumables API routes
 

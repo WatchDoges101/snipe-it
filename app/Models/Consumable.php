@@ -561,7 +561,7 @@ class Consumable extends SnipeModel
      */
     public function scopeOrderAmount($query, $order)
     {
-        return $query->orderByRaw('consumables_users_count '.$order);
+        return $query->orderBy('consumables_users_count', $order);
     }
 
     /**
