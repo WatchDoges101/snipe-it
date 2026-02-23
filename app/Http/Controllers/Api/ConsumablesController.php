@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\ImageUploadRequest;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ConsumablesController extends Controller
 {
@@ -334,63 +335,15 @@ class ConsumablesController extends Controller
     public function checkout(Request $request, Consumable $consumable) : JsonResponse
     {
         $consumable->load('users');
-
         $this->authorize('checkout', $consumable);
-
         $consumable->checkout_qty = (int) $request->input('checkout_qty', 1);
 
-        // Make sure there is at least one available to checkout
-        if ($consumable->numRemaining() <= 0) {
-            return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.unavailable')));
-        }
-
-        // Make sure there is a valid category
-        if (!$consumable->category){
-            return response()->json(Helper::formatStandardApiResponse('error', null, trans('general.invalid_item_category_single', ['type' => trans('general.consumable')])));
-        }
-
-        // Make sure there is at least one available to checkout
-        if ($consumable->numRemaining() <= 0 || $consumable->checkout_qty > $consumable->numRemaining()) {
-            return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.unavailable', ['requested' => $consumable->checkout_qty, 'remaining' => $consumable->numRemaining() ])));
-        }
-
-
-
-        $target = null;
-
-        if ($request->filled('checkout_to_type')) {
-            $target = $this->determineCheckoutTarget();
-        } elseif ($request->filled('assigned_user') || $request->filled('assigned_asset')) {
-            if ($request->filled('assigned_asset')) {
-                $target = Asset::find($request->input('assigned_asset'));
-                $request->request->add(['checkout_to_type' => 'asset']);
-            } else {
-                $target = User::find($request->input('assigned_user'));
-                $request->request->add(['checkout_to_type' => 'user']);
-            }
-        } elseif ($request->filled('assigned_to')) {
-            $target = User::find($request->input('assigned_to'));
-            $request->request->add([
-                'checkout_to_type' => 'user',
-                'assigned_user' => $request->input('assigned_to'),
-            ]);
-        }
-
-        if (!$target) {
-            return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.user_does_not_exist')));
-        }
+        $this->validateCheckoutRequest($consumable);
+        $target = $this->resolveCheckoutTargetOrFail($request);
 
         $consumable->assigned_to = $target->id;
 
-        for ($i = 0; $i < $consumable->checkout_qty; $i++) {
-            $consumable->consumableAssignments()->create([
-                'consumable_id' => $consumable->id,
-                'created_by' => auth()->id(),
-                'assigned_to' => $target->id,
-                'assigned_type' => $target::class,
-                'note' => $request->input('note'),
-            ]);
-        }
+        $this->createCheckoutAssignments($consumable, $target, $request->input('note'));
 
         event(new CheckoutableCheckedOut(
             $consumable,
@@ -403,6 +356,73 @@ class ConsumablesController extends Controller
 
         return response()->json(Helper::formatStandardApiResponse('success', null, trans('admin/consumables/message.checkout.success')));
 
+    }
+
+    private function validateCheckoutRequest(Consumable $consumable): void
+    {
+        if ($consumable->numRemaining() <= 0) {
+            throw new HttpResponseException(response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.unavailable'))));
+        }
+
+        if (!$consumable->category) {
+            throw new HttpResponseException(response()->json(Helper::formatStandardApiResponse('error', null, trans('general.invalid_item_category_single', ['type' => trans('general.consumable')]))));
+        }
+
+        if ($consumable->checkout_qty > $consumable->numRemaining()) {
+            throw new HttpResponseException(response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.unavailable', ['requested' => $consumable->checkout_qty, 'remaining' => $consumable->numRemaining() ]))));
+        }
+    }
+
+    private function resolveCheckoutTargetOrFail(Request $request): mixed
+    {
+        $target = $this->resolveCheckoutTarget($request);
+
+        if ($target) {
+            return $target;
+        }
+
+        throw new HttpResponseException(response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.user_does_not_exist'))));
+    }
+
+    private function resolveCheckoutTarget(Request $request): mixed
+    {
+        if ($request->filled('checkout_to_type')) {
+            return $this->determineCheckoutTarget();
+        }
+
+        if ($request->filled('assigned_user') || $request->filled('assigned_asset')) {
+            if ($request->filled('assigned_asset')) {
+                $request->request->add(['checkout_to_type' => 'asset']);
+                return Asset::find($request->input('assigned_asset'));
+            }
+
+            $request->request->add(['checkout_to_type' => 'user']);
+            return User::find($request->input('assigned_user'));
+        }
+
+        if ($request->filled('assigned_to')) {
+            $request->request->add([
+                'checkout_to_type' => 'user',
+                'assigned_user' => $request->input('assigned_to'),
+            ]);
+
+            return User::find($request->input('assigned_to'));
+        }
+
+        return null;
+    }
+
+    private function createCheckoutAssignments(Consumable $consumable, mixed $target, ?string $note): void
+    {
+        for ($i = 0; $i < $consumable->checkout_qty; $i++) {
+            $consumable->consumableAssignments()->create([
+                'consumable_id' => $consumable->id,
+                'created_by' => auth()->id(),
+                'assigned_to' => $target->id,
+                'assigned_type' => $target::class,
+                'note' => $note,
+            ]);
+        }
     }
 
     /**
