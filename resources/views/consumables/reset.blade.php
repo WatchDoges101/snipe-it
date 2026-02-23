@@ -1,6 +1,6 @@
 @extends('layouts/edit-form', [
-    'createText' => trans('admin/consumables/general.replenish'),
-    'updateText' => trans('admin/consumables/general.replenish'),
+    'createText' => trans('admin/consumables/general.replenish') === 'admin/consumables/general.replenish' ? 'Replenish' : trans('admin/consumables/general.replenish'),
+    'updateText' => trans('admin/consumables/general.replenish') === 'admin/consumables/general.replenish' ? 'Replenish' : trans('admin/consumables/general.replenish'),
     'httpMethod' => 'POST',
     'helpText' => trans('help.consumables'),
     'helpPosition' => 'right',
