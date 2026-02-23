@@ -551,9 +551,9 @@ class UserPresenter extends Presenter
     public function formattedNameLink() {
 
         if (auth()->user()->can('view', ['\App\Models\User', $this])) {
-            return ($this->tag_color ? "<i class='fa-solid fa-fw fa-square' style='color: ".e($this->tag_color)."' aria-hidden='true'></i>" : '').'<a href="'.route('users.show', e($this->id)).'">'.e($this->display_name).'</a>';
+            return '<a href="'.route('users.show', e($this->id)).'" class="'. (($this->deleted_at!='') ? 'deleted' : '').'">'.e($this->display_name).'</a>';
         }
 
-        return ($this->tag_color ? "<i class='fa-solid fa-fw fa-square' style='color: ".e($this->tag_color)."' aria-hidden='true'></i>" : '').e($this->display_name);
+        return '<span class="'. (($this->deleted_at!='') ? 'deleted' : '').'">'.e($this->display_name).'</span>';
     }
 }
