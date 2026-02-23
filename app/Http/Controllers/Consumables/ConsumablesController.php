@@ -296,7 +296,7 @@ class ConsumablesController extends Controller
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Replenish Success',
+                'message' => trans('admin/consumables/message.replenish.success'),
                 'data' => [
                     'id' => $consumable->id,
                     'qty' => $consumable->qty,
@@ -306,7 +306,7 @@ class ConsumablesController extends Controller
         }
 
         return Helper::getRedirectOption($request, $consumable->id, 'Consumables')
-            ->with('success', 'Replenish Success');
+            ->with('success', trans('admin/consumables/message.replenish.success'));
     }
 
 }

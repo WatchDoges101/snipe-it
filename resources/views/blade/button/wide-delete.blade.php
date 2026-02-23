@@ -15,7 +15,7 @@
                 {{ trans('general.delete') }}
             </button>
         @else
-            <button class="btn btn-block btn-sm btn-danger btn-social delete-asset" data-toggle="modal"{!! $tooltip ? ' title="'.e(trans('general.delete_what', ['item'=> trans('general.'.$type)])).'" data-tooltip="true" data-placement="top"' : '' !!} data-content="{{ trans('general.sure_to_delete_var', ['item' => $item->name]) }}" data-target="#dataConfirmModal" data-icon="fa fa-trash" data-title="{{ trans('general.delete_what', ['item'=> trans('general.'.$type)]) }}" onClick="return false;">
+            <button class="btn btn-block btn-sm btn-danger btn-social delete-asset" data-toggle="modal"{!! $tooltip ? ' title="'.e(trans('general.delete')).'" data-tooltip="true" data-placement="top"' : '' !!} data-content="{{ trans('general.sure_to_delete_var', ['item' => $item->name]) }}" data-target="#dataConfirmModal" data-icon="fa fa-trash" data-title="{{ trans('general.delete_what', ['item'=> trans('general.'.$type)]) }}" onClick="return false;">
                 <x-icon type="delete" />
                 {{ trans('general.delete') }}
             </button>

@@ -1,6 +1,6 @@
 @extends('layouts/edit-form', [
-    'createText' => 'Replenish',
-    'updateText' => 'Replenish',
+    'createText' => trans('admin/consumables/general.replenish'),
+    'updateText' => trans('admin/consumables/general.replenish'),
     'httpMethod' => 'POST',
     'helpText' => trans('help.consumables'),
     'helpPosition' => 'right',
@@ -8,14 +8,14 @@
     'index_route' => 'consumables.index',
     'options' => [
                 'back' => trans('admin/hardware/form.redirect_to_type',['type' => trans('general.previous_page')]),
-                'index' => trans('admin/hardware/form.redirect_to_all', ['type' => 'consumables']),
+                'index' => trans('admin/hardware/form.redirect_to_all', ['type' => trans('general.consumables')]),
                 'item' => trans('admin/hardware/form.redirect_to_type', ['type' => trans('general.consumable')]),
                ]
 ])
 
 @section('inputFields')
     <div class="form-group required">
-        <label class="col-md-3 control-label">QTY to Replenish</label>
+        <label class="col-md-3 control-label">{{ trans('admin/consumables/general.qty_to_replenish') }}</label>
         <div class="col-md-7 col-sm-12">
             <input
                 type="number"
@@ -32,7 +32,7 @@
 
     <div class="form-group">
         <div class="col-md-7 col-sm-12 col-md-offset-3">
-            <p class="help-block">Press save to replenish the selected quantity back into available stock.</p>
+            <p class="help-block">{{ trans('admin/consumables/general.replenish_selected_qty_help') }}</p>
         </div>
     </div>
 
@@ -44,7 +44,7 @@
     </div>
 
     <div class="form-group">
-        <label class="col-md-3 control-label">General Note</label>
+        <label class="col-md-3 control-label">{{ trans('admin/consumables/general.general_note') }}</label>
         <div class="col-md-7 col-sm-12">
             <textarea name="note" class="form-control" rows="4"></textarea>
         </div>

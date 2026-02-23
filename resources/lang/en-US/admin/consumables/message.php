@@ -32,6 +32,11 @@ return array(
         'error'   		=> 'Consumable was not checked in, please try again',
         'success' 		=> 'Consumable checked in successfully.',
         'user_does_not_exist' => 'That user is invalid. Please try again.'
+    ),
+
+    'replenish' => array(
+        'error' => 'Replenish failed.',
+        'success' => 'Replenish successful.'
     )
 
 

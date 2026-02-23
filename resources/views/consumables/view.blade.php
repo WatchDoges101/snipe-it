@@ -90,7 +90,7 @@
                         <x-button.wide-edit :item="$consumable" :route="route('consumables.edit', $consumable->id)" :tooltip="false" />
                         @can('update', $consumable)
                             <a href="{{ route('consumables.reset.show', $consumable->id) }}" class="btn btn-block btn-sm btn-primary btn-social hidden-print">
-                                <i class="fa-solid fa-boxes-stacked"></i> Replenish
+                                <i class="fa-solid fa-boxes-stacked"></i> {{ trans('admin/consumables/general.replenish') }}
                             </a>
                         @endcan
                         <x-button.wide-clone :item="$consumable" :route="route('consumables.clone.create', $consumable->id)" :tooltip="false" />
