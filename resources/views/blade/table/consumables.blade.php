@@ -1,6 +1,6 @@
 @props([
     'route' => null,
-    'name' => 'default',
+    'name' => 'consumables-v2',
 ])
 
 <!-- start consumables tab pane -->

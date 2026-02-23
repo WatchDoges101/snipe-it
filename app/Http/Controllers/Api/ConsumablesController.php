@@ -4,20 +4,26 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\CheckoutableCheckedOut;
 use App\Helpers\Helper;
+use App\Http\Controllers\CheckInOutRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreConsumableRequest;
+use App\Http\Transformers\ActionlogsTransformer;
 use App\Http\Transformers\ConsumablesTransformer;
 use App\Http\Transformers\SelectlistTransformer;
-use App\Models\Company;
+use App\Models\Actionlog;
+use App\Models\Asset;
 use App\Models\Consumable;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Requests\ImageUploadRequest;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ConsumablesController extends Controller
 {
+    use CheckInOutRequest;
+
     /**
      * Display a listing of the resource.
      *
@@ -29,7 +35,7 @@ class ConsumablesController extends Controller
         $this->authorize('index', Consumable::class);
 
         $consumables = Consumable::with('company', 'location', 'category', 'supplier', 'manufacturer')
-            ->withCount('users as consumables_users_count');
+            ->withCount('consumableAssignments as consumables_users_count');
 
         // This array is what determines which fields should be allowed to be sorted on ON the table itself.
         // These must match a column on the consumables table directly.
@@ -136,6 +142,9 @@ class ConsumablesController extends Controller
             case 'remaining':
                 $consumables = $consumables->OrderRemaining($order);
                 break;
+            case 'order_amount':
+                $consumables = $consumables->OrderAmount($order);
+                break;
             case 'supplier':
                 $consumables = $consumables->OrderSupplier($order);
                 break;
@@ -181,10 +190,10 @@ class ConsumablesController extends Controller
      * @author [A. Gianotto] [<snipe@snipe.net>]
      * @param  int $id
      */
-    public function show($id) : array
+    public function show(Consumable $consumable) : array
     {
         $this->authorize('view', Consumable::class);
-        $consumable = Consumable::with('users')->findOrFail($id);
+        $consumable->load('users');
 
         return (new ConsumablesTransformer)->transformConsumable($consumable);
     }
@@ -197,10 +206,9 @@ class ConsumablesController extends Controller
      * @param  \App\Http\Requests\ImageUploadRequest $request
      * @param  int $id
      */
-    public function update(StoreConsumableRequest $request, $id) : JsonResponse
+    public function update(StoreConsumableRequest $request, Consumable $consumable) : JsonResponse
     {
         $this->authorize('update', Consumable::class);
-        $consumable = Consumable::findOrFail($id);
         $consumable->fill($request->all());
         $consumable = $request->handleImages($consumable);
         
@@ -218,10 +226,9 @@ class ConsumablesController extends Controller
      * @since [v4.0]
      * @param  int $id
      */
-    public function destroy($id) : JsonResponse
+    public function destroy(Consumable $consumable) : JsonResponse
     {
         $this->authorize('delete', Consumable::class);
-        $consumable = Consumable::findOrFail($id);
         $this->authorize('delete', $consumable);
         $consumable->delete();
 
@@ -236,20 +243,18 @@ class ConsumablesController extends Controller
     * @since [v1.0]
     * @param int $consumableId
      */
-    public function getDataView($consumableId) : array
+    public function getDataView(Consumable $consumable) : array
     {
-        $consumable = Consumable::with(['consumableAssignments'=> function ($query) {
+        $consumable->load(['consumableAssignments'=> function ($query) {
+            $query->UserAssigned();
             $query->orderBy($query->getModel()->getTable().'.created_at', 'DESC');
         },
         'consumableAssignments.adminuser'=> function ($query) {
         },
         'consumableAssignments.user'=> function ($query) {
         },
-        ])->find($consumableId);
+        ]);
 
-        if (! Company::isCurrentUserHasAccess($consumable)) {
-            return ['total' => 0, 'rows' => []];
-        }
         $this->authorize('view', Consumable::class);
         $rows = [];
 
@@ -276,63 +281,73 @@ class ConsumablesController extends Controller
     }
 
     /**
+    * Returns a JSON response containing checkout history for this consumable.
+    */
+    public function getAssignmentHistory(Request $request, Consumable $consumable) : JsonResponse | array
+    {
+        $this->authorize('view', Consumable::class);
+
+        $actionlogs = Actionlog::with('item', 'user', 'adminuser', 'target', 'location')
+            ->where('item_id', '=', $consumable->id)
+            ->where('item_type', '=', Consumable::class)
+            ->where('action_type', '=', 'checkout');
+
+        if ($request->filled('search')) {
+            $actionlogs = $actionlogs->TextSearch($request->input('search'));
+        }
+
+        $allowedColumns = [
+            'id',
+            'created_at',
+            'created_by',
+            'action_type',
+            'note',
+            'action_date',
+        ];
+
+        $total = $actionlogs->count();
+        $offset = ($request->input('offset') > $total) ? $total : app('api_offset_value');
+        $limit = app('api_limit_value');
+        $order = ($request->input('order') == 'asc') ? 'asc' : 'desc';
+
+        switch ($request->input('sort')) {
+            case 'created_by':
+                $actionlogs->OrderByCreatedBy($order);
+                break;
+            default:
+                $sort = in_array($request->input('sort'), $allowedColumns) ? $request->input('sort') : 'action_logs.created_at';
+                $actionlogs = $actionlogs->orderBy($sort, $order);
+                break;
+        }
+
+        $actionlogs = $actionlogs->skip($offset)->take($limit)->get();
+
+        return response()->json((new ActionlogsTransformer)->transformActionlogs($actionlogs, $total), 200, ['Content-Type' => 'application/json;charset=utf8'], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
      * Checkout a consumable
      *
      * @author [A. Gutierrez] [<andres@baller.tv>]
      * @param int $id
      * @since [v4.9.5]
      */
-    public function checkout(Request $request, $id) : JsonResponse
+    public function checkout(Request $request, Consumable $consumable) : JsonResponse
     {
-        // Check if the consumable exists
-        if (!$consumable = Consumable::with('users')->find($id)) {
-            return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.does_not_exist')));
-        }
-
+        $consumable->load('users');
         $this->authorize('checkout', $consumable);
+        $consumable->checkout_qty = (int) $request->input('checkout_qty', 1);
 
-        $consumable->checkout_qty = $request->input('checkout_qty', 1);
+        $this->validateCheckoutRequest($consumable);
+        $target = $this->resolveCheckoutTargetOrFail($request);
 
-        // Make sure there is at least one available to checkout
-        if ($consumable->numRemaining() <= 0) {
-            return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.unavailable')));
-        }
+        $consumable->assigned_to = $target->id;
 
-        // Make sure there is a valid category
-        if (!$consumable->category){
-            return response()->json(Helper::formatStandardApiResponse('error', null, trans('general.invalid_item_category_single', ['type' => trans('general.consumable')])));
-        }
-
-        // Make sure there is at least one available to checkout
-        if ($consumable->numRemaining() <= 0 || $consumable->checkout_qty > $consumable->numRemaining()) {
-            return response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.unavailable', ['requested' => $consumable->checkout_qty, 'remaining' => $consumable->numRemaining() ])));
-        }
-
-
-
-        // Check if the user exists - @TODO:  this should probably be handled via validation, not here??
-        if (!$user = User::find($request->input('assigned_to'))) {
-            // Return error message
-            return response()->json(Helper::formatStandardApiResponse('error', null, 'No user found'));
-        }
-
-        // Update the consumable data
-        $consumable->assigned_to = $request->input('assigned_to');
-
-        for ($i = 0; $i < $consumable->checkout_qty; $i++) {
-            $consumable->users()->attach($consumable->id,
-                [
-                    'consumable_id' => $consumable->id,
-                    'created_by' => $user->id,
-                    'assigned_to' => $request->input('assigned_to'),
-                    'note' => $request->input('note'),
-                ]
-            );
-        }
+        $this->createCheckoutAssignments($consumable, $target, $request->input('note'));
 
         event(new CheckoutableCheckedOut(
             $consumable,
-            $user,
+            $target,
             auth()->user(),
             $request->input('note'),
             [],
@@ -341,6 +356,73 @@ class ConsumablesController extends Controller
 
         return response()->json(Helper::formatStandardApiResponse('success', null, trans('admin/consumables/message.checkout.success')));
 
+    }
+
+    private function validateCheckoutRequest(Consumable $consumable): void
+    {
+        if ($consumable->numRemaining() <= 0) {
+            throw new HttpResponseException(response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.unavailable'))));
+        }
+
+        if (!$consumable->category) {
+            throw new HttpResponseException(response()->json(Helper::formatStandardApiResponse('error', null, trans('general.invalid_item_category_single', ['type' => trans('general.consumable')]))));
+        }
+
+        if ($consumable->checkout_qty > $consumable->numRemaining()) {
+            throw new HttpResponseException(response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.unavailable', ['requested' => $consumable->checkout_qty, 'remaining' => $consumable->numRemaining() ]))));
+        }
+    }
+
+    private function resolveCheckoutTargetOrFail(Request $request): mixed
+    {
+        $target = $this->resolveCheckoutTarget($request);
+
+        if ($target) {
+            return $target;
+        }
+
+        throw new HttpResponseException(response()->json(Helper::formatStandardApiResponse('error', null, trans('admin/consumables/message.checkout.user_does_not_exist'))));
+    }
+
+    private function resolveCheckoutTarget(Request $request): mixed
+    {
+        if ($request->filled('checkout_to_type')) {
+            return $this->determineCheckoutTarget();
+        }
+
+        if ($request->filled('assigned_user') || $request->filled('assigned_asset')) {
+            if ($request->filled('assigned_asset')) {
+                $request->request->add(['checkout_to_type' => 'asset']);
+                return Asset::find($request->input('assigned_asset'));
+            }
+
+            $request->request->add(['checkout_to_type' => 'user']);
+            return User::find($request->input('assigned_user'));
+        }
+
+        if ($request->filled('assigned_to')) {
+            $request->request->add([
+                'checkout_to_type' => 'user',
+                'assigned_user' => $request->input('assigned_to'),
+            ]);
+
+            return User::find($request->input('assigned_to'));
+        }
+
+        return null;
+    }
+
+    private function createCheckoutAssignments(Consumable $consumable, mixed $target, ?string $note): void
+    {
+        for ($i = 0; $i < $consumable->checkout_qty; $i++) {
+            $consumable->consumableAssignments()->create([
+                'consumable_id' => $consumable->id,
+                'created_by' => auth()->id(),
+                'assigned_to' => $target->id,
+                'assigned_type' => $target::class,
+                'note' => $note,
+            ]);
+        }
     }
 
     /**

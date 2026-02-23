@@ -21,11 +21,10 @@
                 <x-slot:tabnav>
 
                     <x-tabs.nav-item
-                            name="assigned"
+                            name="assigned_history"
                             class="active"
                             icon_type="checkedout"
-                            label="{{ trans('general.assigned') }}"
-                            count="{{ $consumable->numCheckedOut() }}"
+                            label="Assigned History"
                     />
 
                     <x-tabs.files-tab count="{{ $consumable->uploads()->count() }}" />
@@ -40,12 +39,14 @@
 
                 <x-slot:tabpanes>
 
-                    <x-tabs.pane name="assigned" class="in active">
+                    <x-tabs.pane name="assigned_history" class="in active">
 
                         <x-slot:content>
                             <x-table
-                                    :presenter="\App\Presenters\ConsumablePresenter::checkedOut()"
-                                    :api_url="route('api.consumables.show.users', $consumable->id)"
+                                    name="consumableAssignedHistory"
+                                    api_url="{{ route('api.consumables.assignment_history', $consumable->id) }}"
+                                    :presenter="\App\Presenters\ConsumablePresenter::assignedHistoryLayout()"
+                                    :show_columns="false"
                             />
                         </x-slot:content>
 
@@ -85,10 +86,15 @@
 
                     <x-slot:before_list>
 
-                        <x-button.wide-checkout :item="$consumable" :route="route('consumables.checkout.show', $consumable->id)" />
-                        <x-button.wide-edit :item="$consumable" :route="route('consumables.edit', $consumable->id)" />
-                        <x-button.wide-clone :item="$consumable" :route="route('consumables.clone.create', $consumable->id)" />
-                        <x-button.wide-delete :item="$consumable" />
+                        <x-button.wide-checkout :item="$consumable" :route="route('consumables.checkout.show', $consumable->id)" :tooltip="false" />
+                        <x-button.wide-edit :item="$consumable" :route="route('consumables.edit', $consumable->id)" :tooltip="false" />
+                        @can('update', $consumable)
+                            <a href="{{ route('consumables.reset.show', $consumable->id) }}" class="btn btn-block btn-sm btn-primary btn-social hidden-print">
+                                <x-icon type="replenish" /> Replenish
+                            </a>
+                        @endcan
+                        <x-button.wide-clone :item="$consumable" :route="route('consumables.clone.create', $consumable->id)" :tooltip="false" />
+                        <x-button.wide-delete :item="$consumable" :tooltip="false" />
 
                     </x-slot:before_list>
 

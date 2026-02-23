@@ -346,6 +346,7 @@ class ActionlogsTransformer
         // only a few action types will have a quantity we are interested in.
         if (!in_array($actionlog->action_type, [
             ActionType::Checkout->value,
+            ActionType::Update->value,
             ActionType::Accepted->value,
             ActionType::Declined->value,
             ActionType::CheckinFrom->value,

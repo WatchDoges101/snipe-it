@@ -442,6 +442,46 @@ class AssetPresenter extends Presenter
         return json_encode($layout);
     }
 
+    public static function assignedConsumablesDataTableLayout()
+    {
+        $layout = [
+            self::assignedConsumableColumn('id', trans('general.id'), false),
+            self::assignedConsumableColumn('consumable', trans('general.consumable'), true, 'consumablesLinkObjFormatter'),
+            self::assignedConsumableColumn('image', trans('general.image'), true, 'imageFormatter'),
+            self::assignedConsumableColumn('note', trans('general.notes'), true),
+            self::assignedConsumableColumn('created_at', trans('admin/hardware/table.checkout_date'), true, 'dateDisplayFormatter'),
+            self::assignedConsumableFixedColumn('created_by', trans('general.created_by'), false, 'usersLinkObjFormatter'),
+        ];
+
+        return json_encode($layout);
+    }
+
+    private static function assignedConsumableColumn($field, $title, $visible, $formatter=null)
+    {
+        $column = [
+            'field' => $field,
+            'searchable' => false,
+            'sortable' => false,
+            'switchable' => true,
+            'title' => $title,
+            'visible' => $visible,
+        ];
+
+        if (! is_null($formatter)) {
+            $column['formatter'] = $formatter;
+        }
+
+        return $column;
+    }
+
+    private static function assignedConsumableFixedColumn($field, $title, $visible, $formatter=null)
+    {
+        $column = self::assignedConsumableColumn($field, $title, $visible, $formatter);
+        unset($column['switchable']);
+
+        return $column;
+    }
+
     /**
      * Generate html link to this items name.
      * @return string

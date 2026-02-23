@@ -2,11 +2,20 @@
 
 namespace App\Presenters;
 
+use App\Helpers\IconHelper;
+
 /**
  * Class CompanyPresenter
  */
 class ActionlogPresenter extends Presenter
 {
+    private function isConsumableReset(): bool
+    {
+        return ($this->action_type === 'update')
+            && is_string($this->note)
+            && str_starts_with($this->note, 'Consumable replenished');
+    }
+
     public function adminuser()
     {
         if ($user = $this->model->user) {
@@ -39,83 +48,91 @@ class ActionlogPresenter extends Presenter
     public function icon()
     {
 
+        if ($this->isConsumableReset()) {
+            return IconHelper::icon('replenish');
+        }
+
         // User related icons
         if ($this->itemType() == 'user') {
 
             if ($this->action_type == '2fa reset') {
-                return 'fa-solid fa-mobile-screen';
+                return IconHelper::icon('2fa reset');
             }
 
             if ($this->action_type == 'create') {
-                return 'fa-solid fa-user-plus';
+                return IconHelper::icon('new-user');
             }
 
             if ($this->action_type == 'merged') {
-                return 'fa-solid fa-people-arrows';
+                return IconHelper::icon('merged-user');
             }
 
             if ($this->action_type == 'delete') {
-                return 'fa-solid fa-user-minus';
+                return IconHelper::icon('delete-user');
             }
 
             if ($this->action_type == 'delete') {
-                return 'fa-solid fa-user-minus';
+                return IconHelper::icon('delete-user');
             }
 
             if ($this->action_type == 'upload deleted') {
-                return 'fa-solid fa-trash';
+                return IconHelper::icon('upload deleted');
             }
 
             if ($this->action_type == 'update') {
-                return 'fa-solid fa-user-pen';
+                return IconHelper::icon('update-user');
             }
 
-             return 'fa-solid fa-user';
+             return IconHelper::icon('user');
         }
 
         // Everything else
         if ($this->action_type == 'create') {
-            return 'fa-solid fa-plus';
+            return IconHelper::icon('create');
         }
 
         if (($this->action_type == 'delete') || ($this->action_type == 'upload deleted')) {
-            return 'fa-solid fa-trash';
+            return IconHelper::icon('delete');
         }
 
         if ($this->action_type == 'update') {
-            return 'fa-solid fa-pen';
+            return IconHelper::icon('edit');
         }
 
         if ($this->action_type == 'restore') {
-            return 'fa-solid fa-trash-arrow-up';
+            return IconHelper::icon('restore');
         }
 
         if ($this->action_type == 'upload') {
-            return 'fas fa-paperclip';
+            return IconHelper::icon('paperclip');
         }
 
         if ($this->action_type == 'checkout') {
-            return 'fa-solid fa-rotate-left';
+            return IconHelper::icon('checkout');
         }
 
         if ($this->action_type == 'checkin from') {
-            return 'fa-solid fa-rotate-right';
+            return IconHelper::icon('checkin');
         }
 
         if ($this->action_type == 'note added') {
-            return 'fas fa-sticky-note';
+            return IconHelper::icon('note');
         }
 
         if ($this->action_type == 'audit') {
-            return 'fas fa-clipboard-check';
+            return IconHelper::icon('audit');
         }
 
-        return 'fa-solid fa-rotate-right';
+        return IconHelper::icon('checkin');
 
     }
 
     public function actionType()
     {
+        if ($this->isConsumableReset()) {
+            return 'replenish';
+        }
+
         return mb_strtolower(trans('general.'.str_replace(' ', '_', $this->action_type)));
     }
 

@@ -160,6 +160,78 @@ $(function () {
         return false;
     });
 
+    // consumable reset modal
+    $el.on('click', '.btn-reset', function (evnt) {
+        var $context = $(this);
+        var $resetModal = $('#resetModal');
+
+        if ($resetModal.length === 0) {
+            return true;
+        }
+
+        evnt.preventDefault();
+
+        var href = $context.attr('href');
+        var helpText = $context.attr('data-help');
+        var modalTitle = $context.attr('data-modal-title') || $context.attr('title') || '';
+        var failMessage = $context.attr('data-fail-message') || '';
+        var $form = $resetModal.find('form');
+
+        $form.attr('action', href);
+        $form.find('[name="note"]').val('');
+        $resetModal.find('.modal-title').text(modalTitle);
+        $resetModal.find('#resetModalMinHelp').text(helpText);
+        $resetModal.data('failMessage', failMessage);
+
+        $resetModal.modal({
+            show: true
+        });
+        return false;
+    });
+
+    $el.on('click', '#resetModalSubmit', function (evnt) {
+        var $resetModal = $('#resetModal');
+
+        if ($resetModal.length === 0) {
+            return true;
+        }
+
+        evnt.preventDefault();
+
+        var $form = $resetModal.find('form');
+        var action = $form.attr('action');
+
+        if (!action) {
+            return false;
+        }
+
+        $.ajax({
+            url: action,
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: $form.serialize(),
+            success: function (resp) {
+                $resetModal.modal('hide');
+                if (resp && resp.message) {
+                    alert(resp.message);
+                }
+                setTimeout(function () {
+                    window.location.reload();
+                }, 300);
+            },
+            error: function () {
+                var message = $resetModal.data('failMessage');
+                if (message) {
+                    alert(message);
+                }
+            }
+        });
+
+        return false;
+    });
+
 
 
      /*

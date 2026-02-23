@@ -284,12 +284,19 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'api-throttle:api']], fu
             ]
         )->name('api.consumables.selectlist');
 
-        Route::get('{id}/users',
+        Route::get('{consumable}/users',
             [
                 Api\ConsumablesController::class, 
                 'getDataView'
             ]
         )->name('api.consumables.show.users');
+
+        Route::get('{consumable}/assignment-history',
+            [
+                Api\ConsumablesController::class,
+                'getAssignmentHistory'
+            ]
+        )->name('api.consumables.assignment_history');
 
 
         Route::post('{consumable}/checkout',
@@ -312,7 +319,6 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'api-throttle:api']], fu
                 'destroy' => 'api.consumables.destroy',
             ],
         'except' => ['create', 'edit'],
-        'parameters' => ['consumable' => 'consumable_id'],
         ]
         ); // end consumables API routes
 
@@ -578,6 +584,13 @@ Route::group(['prefix' => 'v1', 'middleware' => ['api', 'api-throttle:api']], fu
                   'assignedComponents'
               ]
           )->name('api.assets.assigned_components');
+
+          Route::get('{asset}/assigned/consumables',
+              [
+                  Api\AssetsController::class,
+                  'assignedConsumables'
+              ]
+          )->name('api.assets.assigned_consumables');
           /** End assigned routes */
 
       });

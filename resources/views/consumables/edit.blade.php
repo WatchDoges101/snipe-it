@@ -7,7 +7,7 @@
     'index_route' => 'consumables.index',
     'options' => [
                 'back' => trans('admin/hardware/form.redirect_to_type',['type' => trans('general.previous_page')]),
-                'index' => trans('admin/hardware/form.redirect_to_all', ['type' => 'consumables']),
+                'index' => trans('admin/hardware/form.redirect_to_all', ['type' => trans('general.consumables')]),
                 'item' => trans('admin/hardware/form.redirect_to_type', ['type' => trans('general.consumable')]),
                ]
 ])

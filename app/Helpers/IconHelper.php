@@ -256,6 +256,8 @@ class IconHelper
             case 'models':
             case 'model':
                 return 'fa-solid fa-boxes-stacked';
+            case 'replenish':
+                return 'fa-solid fa-arrows-up-to-line';
             case 'min-qty':
                 return 'fa-solid fa-chart-pie';
 

@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\RedirectResponse;
 use \Illuminate\Contracts\View\View;
 use App\Http\Requests\StoreConsumableRequest;
+use App\Models\Actionlog;
+use App\Models\ConsumableAssignment;
+use App\Models\Supplier;
 
 /**
  * This controller handles all actions related to Consumables for
@@ -235,4 +238,164 @@ class ConsumablesController extends Controller
             ->with('cloned_model', $consumable_to_close)
             ->with('item', $consumable);
     }
+
+    /**
+     * Show reset form (set total qty).
+     */
+    public function resetForm(Consumable $consumable)
+    {
+        $this->authorize($consumable);
+        return view('consumables/reset')
+            ->with('item', $consumable)
+            ->with('max_replenish', (int) $consumable->numCheckedOut());
+    }
+
+    /**
+     * Handle reset submission (reset remaining to total), keep history via Actionlog.
+     */
+    public function reset(\Illuminate\Http\Request $request, Consumable $consumable)
+    {
+        $this->authorize($consumable);
+
+        $maxReplenish = (int) $consumable->numCheckedOut();
+
+        $this->validateResetRequest($request, $maxReplenish);
+
+        $replenishData = $this->applyReplenishChanges($request, $consumable);
+        $this->createReplenishActionLog($request, $consumable, $replenishData);
+        $this->storeResetRedirectOption($request);
+
+        return $this->replenishSuccessResponse($request, $consumable, $this->resolveReplenishSuccessMessage());
+    }
+
+    private function validateResetRequest(\Illuminate\Http\Request $request, int $maxReplenish): void
+    {
+        $request->validate([
+            'qty' => "required|integer|min:1|max:$maxReplenish",
+            'supplier_id' => 'nullable|exists:suppliers,id',
+            'purchase_cost' => 'nullable|numeric|min:0|max:99999999999999999.99',
+            'order_number' => 'nullable|string|max:255',
+            'note' => 'nullable|string',
+        ]);
+    }
+
+    private function applyReplenishChanges(\Illuminate\Http\Request $request, Consumable $consumable): array
+    {
+        $totalQty = (int) $consumable->qty;
+        $remainingBefore = (int) $consumable->numRemaining();
+        $replenishQty = (int) $request->input('qty');
+        $unitCostAtReplenish = $request->filled('purchase_cost') ? Helper::ParseFloat($request->input('purchase_cost')) : null;
+        $replenishTotalCost = $unitCostAtReplenish !== null ? $replenishQty * $unitCostAtReplenish : null;
+        $supplierIdRepl = $request->input('supplier_id');
+        $supplierNameRepl = $supplierIdRepl
+            ? Supplier::select('name')->find($supplierIdRepl)?->name
+            : null;
+
+        $assignmentIds = ConsumableAssignment::where('consumable_id', $consumable->id)
+            ->orderBy('id')
+            ->limit($replenishQty)
+            ->pluck('id');
+
+        ConsumableAssignment::whereIn('id', $assignmentIds)->delete();
+
+        $consumable->supplier_id = $supplierIdRepl;
+        $consumable->purchase_cost = $unitCostAtReplenish;
+        $consumable->save();
+
+        return [
+            'total_qty' => $totalQty,
+            'remaining_before' => $remainingBefore,
+            'remaining_after' => (int) $consumable->numRemaining(),
+            'replenish_qty' => $replenishQty,
+            'unit_cost' => $unitCostAtReplenish,
+            'total_cost' => $replenishTotalCost,
+            'supplier_id' => $supplierIdRepl,
+            'supplier_name' => $supplierNameRepl,
+        ];
+    }
+
+    private function createReplenishActionLog(\Illuminate\Http\Request $request, Consumable $consumable, array $replenishData): void
+    {
+        $log = new Actionlog();
+        $log->item()->associate($consumable);
+        $log->action_type = 'update';
+        $log->quantity = $replenishData['replenish_qty'];
+        $log->note = $this->buildReplenishNote($request, $replenishData);
+        $log->log_meta = json_encode([
+            'replenish_supplier_id' => ['old' => null, 'new' => $replenishData['supplier_id']],
+            'replenish_supplier_name' => ['old' => null, 'new' => $replenishData['supplier_name']],
+            'replenish_unit_cost' => ['old' => null, 'new' => $replenishData['unit_cost']],
+            'replenish_total_cost' => ['old' => null, 'new' => $replenishData['total_cost']],
+        ]);
+        $log->created_by = auth()->id();
+        $log->save();
+    }
+
+    private function buildReplenishNote(\Illuminate\Http\Request $request, array $replenishData): string
+    {
+        $noteLines = [
+            'Consumable replenished (qty: '.$replenishData['replenish_qty'].'): remaining changed from '.$replenishData['remaining_before'].' to '.$replenishData['remaining_after'].' (total: '.$replenishData['total_qty'].').',
+        ];
+
+        if ($request->filled('order_number')) {
+            $noteLines[] = 'Order Number: '.$request->input('order_number');
+        }
+
+        if ($replenishData['supplier_name']) {
+            $noteLines[] = 'Supplier: '.$replenishData['supplier_name'];
+        }
+
+        if ($replenishData['unit_cost'] !== null) {
+            $noteLines[] = 'Replenish Unit Cost: '.Helper::formatCurrencyOutput($replenishData['unit_cost']);
+        }
+
+        if ($replenishData['total_cost'] !== null) {
+            $noteLines[] = 'Replenish Total Cost: '.Helper::formatCurrencyOutput($replenishData['total_cost']);
+        }
+
+        if ($request->input('note')) {
+            $noteLines[] = $request->input('note');
+        }
+
+        return implode("\n", $noteLines);
+    }
+
+    private function storeResetRedirectOption(\Illuminate\Http\Request $request): void
+    {
+        $redirectOption = $request->input('redirect_option') === 'back'
+            ? 'index'
+            : $request->input('redirect_option');
+
+        session()->put(['redirect_option' => $redirectOption]);
+    }
+
+    private function resolveReplenishSuccessMessage(): string
+    {
+        $successMessage = trans('admin/consumables/message.replenish.success');
+
+        if ($successMessage === 'admin/consumables/message.replenish.success') {
+            return 'Replenish successful.';
+        }
+
+        return $successMessage;
+    }
+
+    private function replenishSuccessResponse(\Illuminate\Http\Request $request, Consumable $consumable, string $successMessage)
+    {
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => $successMessage,
+                'data' => [
+                    'id' => $consumable->id,
+                    'qty' => $consumable->qty,
+                    'remaining' => $consumable->numRemaining(),
+                ],
+            ]);
+        }
+
+        return Helper::getRedirectOption($request, $consumable->id, 'Consumables')
+            ->with('success', $successMessage);
+    }
+
 }

@@ -123,6 +123,15 @@ class ConsumablePresenter extends Presenter
                 'class' => 'text-right text-padding-number-cell',
                 'footerFormatter' => 'qtySumFormatter',
             ], [
+                'field' => 'order_amount',
+                'searchable' => false,
+                'sortable' => true,
+                'switchable' => true,
+                'title' => trans('admin/consumables/general.order_amount'),
+                'visible' => true,
+                'class' => 'text-right text-padding-number-cell',
+                'footerFormatter' => 'qtySumFormatter',
+            ], [
                 'field' => 'purchase_cost',
                 'searchable' => true,
                 'sortable' => true,
@@ -237,6 +246,122 @@ class ConsumablePresenter extends Presenter
         ];
 
         return json_encode($layout);
+    }
+
+    public static function assignedHistoryLayout()
+    {
+        return json_encode([
+            self::assignedHistoryIconColumn(),
+            self::assignedHistoryCreatedByColumn(),
+            self::assignedHistoryActionDateColumn(),
+            self::assignedHistoryActionColumn(),
+            self::assignedHistoryItemColumn(),
+            self::assignedHistoryTargetColumn(),
+            self::assignedHistoryQuantityColumn(),
+            self::assignedHistoryNotesColumn(),
+        ]);
+    }
+
+    private static function assignedHistoryIconColumn(): array
+    {
+        return [
+            'field' => 'icon',
+            'searchable' => false,
+            'sortable' => true,
+            'switchable' => false,
+            'title' => trans('admin/hardware/table.icon'),
+            'visible' => true,
+            'formatter' => 'iconFormatter',
+        ];
+    }
+
+    private static function assignedHistoryCreatedByColumn(): array
+    {
+        return [
+            'field' => 'created_by',
+            'searchable' => true,
+            'sortable' => true,
+            'switchable' => false,
+            'title' => trans('general.created_by'),
+            'visible' => true,
+            'formatter' => 'usersLinkObjFormatter',
+        ];
+    }
+
+    private static function assignedHistoryActionDateColumn(): array
+    {
+        return [
+            'field' => 'action_date',
+            'searchable' => false,
+            'sortable' => true,
+            'switchable' => false,
+            'title' => trans('general.action_date'),
+            'visible' => true,
+            'formatter' => 'dateDisplayFormatter',
+        ];
+    }
+
+    private static function assignedHistoryActionColumn(): array
+    {
+        return [
+            'field' => 'action_type',
+            'searchable' => true,
+            'sortable' => true,
+            'switchable' => false,
+            'title' => trans('general.action'),
+            'visible' => true,
+        ];
+    }
+
+    private static function assignedHistoryItemColumn(): array
+    {
+        return [
+            'field' => 'item',
+            'searchable' => true,
+            'sortable' => true,
+            'switchable' => false,
+            'title' => trans('general.item'),
+            'visible' => true,
+            'formatter' => 'polymorphicItemFormatter',
+        ];
+    }
+
+    private static function assignedHistoryTargetColumn(): array
+    {
+        return [
+            'field' => 'target',
+            'searchable' => true,
+            'sortable' => true,
+            'switchable' => false,
+            'title' => trans('general.target'),
+            'visible' => true,
+            'formatter' => 'polymorphicItemFormatter',
+        ];
+    }
+
+    private static function assignedHistoryQuantityColumn(): array
+    {
+        return [
+            'field' => 'quantity',
+            'searchable' => false,
+            'sortable' => true,
+            'switchable' => false,
+            'title' => trans('general.quantity'),
+            'visible' => true,
+        ];
+    }
+
+    private static function assignedHistoryNotesColumn(): array
+    {
+        return [
+            'field' => 'note',
+            'searchable' => true,
+            'sortable' => true,
+            'switchable' => false,
+            'title' => trans('general.notes'),
+            'visible' => true,
+            'formatter' => 'notesFormatter',
+        ];
     }
 
     /**

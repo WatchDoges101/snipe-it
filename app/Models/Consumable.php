@@ -13,6 +13,7 @@ use App\Presenters\Presentable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Watson\Validating\ValidatingTrait;
@@ -163,6 +164,14 @@ class Consumable extends SnipeModel
         return $this->hasMany(ConsumableAssignment::class);
     }
 
+    public function assets()
+    {
+        return $this->belongsToMany(Asset::class, 'consumables_users', 'consumable_id', 'assigned_to')
+            ->wherePivot('assigned_type', Asset::class)
+            ->withPivot('id', 'created_at', 'note', 'assigned_type')
+            ->withTrashed();
+    }
+
     /**
      * Establishes the component -> company relationship
      *
@@ -253,7 +262,11 @@ class Consumable extends SnipeModel
      */
     public function users() : Relation
     {
-        return $this->belongsToMany(User::class, 'consumables_users', 'consumable_id', 'assigned_to')->withPivot('created_by')->withTrashed()->withTimestamps();
+        return $this->belongsToMany(User::class, 'consumables_users', 'consumable_id', 'assigned_to')
+            ->wherePivot('assigned_type', User::class)
+            ->withPivot('created_by', 'assigned_type')
+            ->withTrashed()
+            ->withTimestamps();
     }
 
     /**
@@ -303,7 +316,7 @@ class Consumable extends SnipeModel
      */
     public function numCheckedOut()
     {
-        return $this->consumables_users_count ?? $this->users()->count();
+        return $this->consumables_users_count ?? $this->consumableAssignments()->count();
     }
 
     /**
@@ -322,8 +335,56 @@ class Consumable extends SnipeModel
         return $remaining;
     }
     public function totalCostSum() {
+        return $this->purchase_cost !== null ? $this->numCheckedOut() * $this->purchase_cost : null;
+    }
 
-        return $this->purchase_cost !== null ? $this->qty * $this->purchase_cost : null;
+    public function numConsumablesUsed(): int
+    {
+        return (int) $this->assetlog()
+            ->where('action_type', '=', 'checkout')
+            ->sum(DB::raw('COALESCE(quantity, 1)'));
+    }
+
+    public function totalCostUsedSum()
+    {
+        $replenishCostTotal = $this->replenishTotalCostSum();
+
+        if ($replenishCostTotal !== null) {
+            return $replenishCostTotal;
+        }
+
+        return $this->purchase_cost !== null ? $this->numConsumablesUsed() * $this->purchase_cost : null;
+    }
+
+    public function replenishTotalCostSum(): ?float
+    {
+        $replenishLogs = $this->assetlog()
+            ->where('action_type', '=', 'update')
+            ->where('note', 'like', 'Consumable replenished%')
+            ->whereNotNull('log_meta')
+            ->get(['log_meta']);
+
+        $total = 0.0;
+        $hasReplenishCosts = false;
+
+        foreach ($replenishLogs as $replenishLog) {
+            $meta = json_decode($replenishLog->log_meta, true);
+
+            if (!is_array($meta)) {
+                continue;
+            }
+
+            $replenishTotal = data_get($meta, 'replenish_total_cost.new');
+
+            if (!is_numeric($replenishTotal)) {
+                continue;
+            }
+
+            $total += (float) $replenishTotal;
+            $hasReplenishCosts = true;
+        }
+
+        return $hasReplenishCosts ? $total : null;
     }
     /**
      * Get the list of checkouts for this consumable
@@ -525,6 +586,19 @@ class Consumable extends SnipeModel
     {
         $order_by = 'consumables.qty - consumables_users_count ' . $order;
         return $query->orderByRaw($order_by);
+    }
+
+    /**
+     * Query builder scope to order on order amount
+     *
+     * @param \Illuminate\Database\Query\Builder $query Query builder instance
+     * @param string                             $order Order
+     *
+     * @return \Illuminate\Database\Query\Builder          Modified query builder
+     */
+    public function scopeOrderAmount($query, $order)
+    {
+        return $query->orderBy('consumables_users_count', $order);
     }
 
     /**

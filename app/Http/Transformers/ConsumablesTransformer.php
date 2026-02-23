@@ -22,6 +22,8 @@ class ConsumablesTransformer
 
     public function transformConsumable(Consumable $consumable)
     {
+        $remaining = $consumable->numRemaining();
+
         $array = [
             'id'            => (int) $consumable->id,
             'name'          => e($consumable->name),
@@ -54,10 +56,11 @@ class ConsumablesTransformer
             ] : null,
             'min_amt'       => (int) $consumable->min_amt,
             'model_number'  => ($consumable->model_number != '') ? e($consumable->model_number) : null,
-            'remaining'  => $consumable->numRemaining(),
+            'remaining'  => $remaining,
+            'order_amount' => max(0, ((int) $consumable->qty) - $remaining),
             'order_number'  => e($consumable->order_number),
             'purchase_cost'  => Helper::formatCurrencyOutput($consumable->purchase_cost),
-            'total_cost' => Helper::formatCurrencyOutput($consumable->totalCostSum()),
+            'total_cost' => Helper::formatCurrencyOutput($consumable->totalCostUsedSum()),
             'purchase_date'  => Helper::getFormattedDateObject($consumable->purchase_date, 'date'),
             'qty'           => (int) $consumable->qty,
             'notes'         => ($consumable->notes) ? Helper::parseEscapedMarkedownInline($consumable->notes) : null,
@@ -71,7 +74,7 @@ class ConsumablesTransformer
 
         $permissions_array['user_can_checkout'] = false;
 
-        if ($consumable->numRemaining() > 0) {
+        if ($remaining > 0) {
             $permissions_array['user_can_checkout'] = true;
         }
 
@@ -79,6 +82,8 @@ class ConsumablesTransformer
             'checkout' => Gate::allows('checkout', Consumable::class),
             'checkin' => Gate::allows('checkin', Consumable::class),
             'update' => Gate::allows('update', Consumable::class),
+            'replenish' => Gate::allows('update', Consumable::class),
+            'reset' => Gate::allows('update', Consumable::class),
             'delete' => Gate::allows('delete', Consumable::class),
             'clone' => (Gate::allows('create', Consumable::class) && ($consumable->deleted_at == '')),
         ];

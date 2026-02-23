@@ -20,6 +20,7 @@ use App\Models\Asset;
 use App\Models\AssetModel;
 use App\Models\CheckoutAcceptance;
 use App\Models\Company;
+use App\Models\ConsumableAssignment;
 use App\Models\CustomField;
 use App\Models\License;
 use App\Models\LicenseSeat;
@@ -1354,6 +1355,25 @@ class AssetsController extends Controller
         $total = $accessory_checkouts->count();
         $accessory_checkouts = $accessory_checkouts->skip($offset)->take($limit)->get();
         return (new AssetsTransformer)->transformCheckedoutAccessories($accessory_checkouts, $total);
+    }
+
+    public function assignedConsumables(Request $request, Asset $asset) : JsonResponse | array
+    {
+        $this->authorize('view', Asset::class);
+        $this->authorize('view', $asset);
+
+        $consumable_assignments = ConsumableAssignment::AssetsAssigned()
+            ->where('assigned_to', $asset->id)
+            ->with('adminuser')
+            ->with('consumable');
+
+        $offset = ($request->input('offset') > $consumable_assignments->count()) ? $consumable_assignments->count() : app('api_offset_value');
+        $limit = app('api_limit_value');
+
+        $total = $consumable_assignments->count();
+        $consumable_assignments = $consumable_assignments->skip($offset)->take($limit)->get();
+
+        return (new AssetsTransformer)->transformCheckedoutConsumables($consumable_assignments, $total);
     }
 
     public function assignedComponents(Request $request, Asset $asset): JsonResponse|array

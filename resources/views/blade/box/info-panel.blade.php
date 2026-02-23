@@ -146,7 +146,7 @@
                         {{ $snipeSettings->default_currency }}
                     @endif
 
-                    {{ Helper::formatCurrencyOutput($infoPanelObj->totalCostSum()) }}
+                    {{ Helper::formatCurrencyOutput(($infoPanelObj instanceof \App\Models\Consumable) ? $infoPanelObj->totalCostUsedSum() : $infoPanelObj->totalCostSum()) }}
                 </x-info-element>
             @endif
 
@@ -281,6 +281,12 @@
                 </x-info-element.url>
             </x-info-element>
 
+        @endif
+
+        @if ($infoPanelObj instanceof \App\Models\Consumable)
+            <x-info-element icon_type="checkedout" title="Consumables Used">
+                {{ number_format($infoPanelObj->numConsumablesUsed()) }} Consumables Used
+            </x-info-element>
         @endif
 
 
