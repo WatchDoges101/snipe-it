@@ -286,9 +286,9 @@ class ConsumablesController extends Controller
         $replenishQty = (int) $request->input('qty');
         $unitCostAtReplenish = $request->filled('purchase_cost') ? Helper::ParseFloat($request->input('purchase_cost')) : null;
         $replenishTotalCost = $unitCostAtReplenish !== null ? $replenishQty * $unitCostAtReplenish : null;
-        $supplierIdAtReplenish = $request->input('supplier_id');
-        $supplierNameAtReplenish = $supplierIdAtReplenish
-            ? Supplier::select('name')->find($supplierIdAtReplenish)?->name
+        $supplierIdRepl = $request->input('supplier_id');
+        $supplierNameRepl = $supplierIdRepl
+            ? Supplier::select('name')->find($supplierIdRepl)?->name
             : null;
 
         $assignmentIds = ConsumableAssignment::where('consumable_id', $consumable->id)
@@ -298,7 +298,7 @@ class ConsumablesController extends Controller
 
         ConsumableAssignment::whereIn('id', $assignmentIds)->delete();
 
-        $consumable->supplier_id = $supplierIdAtReplenish;
+        $consumable->supplier_id = $supplierIdRepl;
         $consumable->purchase_cost = $unitCostAtReplenish;
         $consumable->save();
 
@@ -309,8 +309,8 @@ class ConsumablesController extends Controller
             'replenish_qty' => $replenishQty,
             'unit_cost' => $unitCostAtReplenish,
             'total_cost' => $replenishTotalCost,
-            'supplier_id' => $supplierIdAtReplenish,
-            'supplier_name' => $supplierNameAtReplenish,
+            'supplier_id' => $supplierIdRepl,
+            'supplier_name' => $supplierNameRepl,
         ];
     }
 
