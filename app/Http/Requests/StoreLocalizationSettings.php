@@ -25,6 +25,7 @@ class StoreLocalizationSettings extends FormRequest
         return [
             'default_currency'                    => 'required',
             'locale'                              => 'required',
+            'timezone'                            => 'required|timezone',
         ];
     }
 }

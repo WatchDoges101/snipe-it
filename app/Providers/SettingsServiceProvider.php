@@ -74,6 +74,12 @@ class SettingsServiceProvider extends ServiceProvider
         });
 
         app()->singleton('accessories_upload_path', function () {
+            $settings = Setting::getSettings();
+            $appTimezone = $settings?->timezone ?: config('app.timezone');
+
+            config(['app.timezone' => $appTimezone]);
+            date_default_timezone_set($appTimezone);
+
             return 'public/uploads/accessories/';
         });
 

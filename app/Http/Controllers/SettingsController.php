@@ -342,8 +342,9 @@ class SettingsController extends Controller
     public function getLocalization() : View
     {
         $setting = Setting::getSettings();
+        $timezones = timezone_identifiers_list();
 
-        return view('settings.localization', compact('setting'));
+        return view('settings.localization', compact('setting', 'timezones'));
     }
 
     /**
@@ -365,6 +366,7 @@ class SettingsController extends Controller
         $setting->default_currency = $request->input('default_currency', '$');
         $setting->date_display_format = $request->input('date_display_format');
         $setting->time_display_format = $request->input('time_display_format');
+        $setting->timezone = $request->input('timezone', config('app.timezone'));
         $setting->digit_separator = $request->input('digit_separator');
         $setting->name_display_format = $request->input('name_display_format');
         $setting->week_start = $request->input('week_start', 0);
