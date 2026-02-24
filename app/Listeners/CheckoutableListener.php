@@ -128,7 +128,7 @@ class CheckoutableListener
                         ->notify($this->getCheckoutNotification($event, $acceptance));
                 }
             } catch (ClientException $e) {
-                $status = optional($e->getResponse()->getStatusCode());
+                $status = $e->getResponse()->getStatusCode();
 
                 if (strpos($e->getMessage(), 'channel_not_found') !== false) {
                     Log::warning(Setting::getSettings()->webhook_selected . " notification failed: " . $e->getMessage());
@@ -231,7 +231,7 @@ class CheckoutableListener
                         ->notify($this->getCheckinNotification($event));
                 }
             } catch (ClientException $e) {
-                $status = optional($e->getResponse()->getStatusCode());
+                $status = $e->getResponse()->getStatusCode();
 
                 if (strpos($e->getMessage(), 'channel_not_found') !== false) {
                     Log::warning(Setting::getSettings()->webhook_selected . " notification failed: " . $e->getMessage());
