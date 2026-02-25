@@ -23,6 +23,12 @@ class SettingsServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        $settings = Setting::getSettings();
+        $appTimezone = $settings?->timezone ?: config('app.timezone');
+
+        config(['app.timezone' => $appTimezone]);
+        date_default_timezone_set($appTimezone);
+
 
         // Share common setting variables with all views.
         view()->composer('*', function ($view) {
@@ -74,12 +80,6 @@ class SettingsServiceProvider extends ServiceProvider
         });
 
         app()->singleton('accessories_upload_path', function () {
-            $settings = Setting::getSettings();
-            $appTimezone = $settings?->timezone ?: config('app.timezone');
-
-            config(['app.timezone' => $appTimezone]);
-            date_default_timezone_set($appTimezone);
-
             return 'public/uploads/accessories/';
         });
 
