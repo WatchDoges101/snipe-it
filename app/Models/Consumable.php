@@ -627,11 +627,25 @@ class Consumable extends SnipeModel
             ->where('action_type', 'checkout')
             ->groupBy('item_id');
 
+        $replenishValueExpr = "NULLIF(REPLACE(JSON_EXTRACT(log_meta, '$.replenish_total_cost.new'), '\"', ''), '')";
+
+        $replenishCostSub = DB::table('action_logs')
+            ->selectRaw('item_id, SUM(COALESCE(CAST('.$replenishValueExpr.' AS DECIMAL(20,6)), 0)) as replenish_total_cost')
+            ->selectRaw('SUM(CASE WHEN '.$replenishValueExpr.' IS NOT NULL THEN 1 ELSE 0 END) as replenish_rows')
+            ->where('item_type', self::class)
+            ->where('action_type', 'update')
+            ->where('note', 'like', 'Consumable replenished%')
+            ->whereNotNull('log_meta')
+            ->groupBy('item_id');
+
         return $query
             ->leftJoinSub($usedQtySub, 'consumables_used_sort', function ($join) {
                 $join->on('consumables.id', '=', 'consumables_used_sort.item_id');
             })
+            ->leftJoinSub($replenishCostSub, 'consumables_replenish_sort', function ($join) {
+                $join->on('consumables.id', '=', 'consumables_replenish_sort.item_id');
+            })
             ->select('consumables.*')
-            ->orderByRaw('COALESCE(consumables.purchase_cost, 0) * COALESCE(consumables_used_sort.used_quantity, 0) '.$order);
+            ->orderByRaw('CASE WHEN COALESCE(consumables_replenish_sort.replenish_rows, 0) > 0 THEN COALESCE(consumables_replenish_sort.replenish_total_cost, 0) ELSE COALESCE(consumables.purchase_cost, 0) * COALESCE(consumables_used_sort.used_quantity, 0) END '.$order);
     }
 }
