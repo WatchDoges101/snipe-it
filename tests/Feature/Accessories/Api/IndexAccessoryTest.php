@@ -67,4 +67,58 @@ class IndexAccessoryTest extends TestCase implements TestsFullMultipleCompaniesS
             ->assertResponseContainsInRows($accessoryA)
             ->assertResponseContainsInRows($accessoryB);
     }
+
+    public function testCanSortAccessoriesByTotalCost()
+    {
+        $user = User::factory()->viewAccessories()->create();
+
+        $cheaperTotal = Accessory::factory()->create([
+            'name' => 'Cheaper Total',
+            'qty' => 2,
+            'purchase_cost' => 10,
+        ]);
+
+        $moreExpensiveTotal = Accessory::factory()->create([
+            'name' => 'More Expensive Total',
+            'qty' => 3,
+            'purchase_cost' => 20,
+        ]);
+
+        $response = $this->actingAsForApi($user)
+            ->getJson(route('api.accessories.index', [
+                'sort' => 'total_cost',
+                'order' => 'asc',
+            ]))
+            ->assertOk();
+
+        $rowIds = collect($response->json('rows'))->pluck('id')->all();
+
+        $this->assertTrue(array_search($cheaperTotal->id, $rowIds) < array_search($moreExpensiveTotal->id, $rowIds));
+    }
+
+    public function testCanSortAccessoriesByPurchaseCost()
+    {
+        $user = User::factory()->viewAccessories()->create();
+
+        $lowerCost = Accessory::factory()->create([
+            'name' => 'Lower Cost',
+            'purchase_cost' => 5,
+        ]);
+
+        $higherCost = Accessory::factory()->create([
+            'name' => 'Higher Cost',
+            'purchase_cost' => 15,
+        ]);
+
+        $response = $this->actingAsForApi($user)
+            ->getJson(route('api.accessories.index', [
+                'sort' => 'purchase_cost',
+                'order' => 'asc',
+            ]))
+            ->assertOk();
+
+        $rowIds = collect($response->json('rows'))->pluck('id')->all();
+
+        $this->assertTrue(array_search($lowerCost->id, $rowIds) < array_search($higherCost->id, $rowIds));
+    }
 }

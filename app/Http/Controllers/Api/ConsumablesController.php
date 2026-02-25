@@ -145,6 +145,9 @@ class ConsumablesController extends Controller
             case 'order_amount':
                 $consumables = $consumables->OrderAmount($order);
                 break;
+            case 'purchase_cost':
+                $consumables = $consumables->orderByRaw('COALESCE(consumables.purchase_cost, 0) '.$order);
+                break;
             case 'total_cost':
                 $consumables = $consumables->OrderTotalCost($order);
                 break;

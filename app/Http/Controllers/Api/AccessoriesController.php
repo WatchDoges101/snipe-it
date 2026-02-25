@@ -46,6 +46,9 @@ class AccessoriesController extends Controller
                 'id',
                 'name',
                 'model_number',
+                'purchase_date',
+                'purchase_cost',
+                'updated_at',
                 'eol',
                 'notes',
                 'created_at',
@@ -64,6 +67,7 @@ class AccessoriesController extends Controller
                 'category',
                 'supplier',
                 'manufacturer',
+                'total_cost',
             ];
 
 
@@ -142,6 +146,12 @@ class AccessoriesController extends Controller
                 break;
             case 'created_by':
                 $accessories = $accessories->OrderByCreatedByName($order);
+                break;
+            case 'purchase_cost':
+                $accessories = $accessories->orderByRaw('COALESCE(accessories.purchase_cost, 0) '.$order);
+                break;
+            case 'total_cost':
+                $accessories = $accessories->orderByRaw('COALESCE(accessories.qty, 0) * COALESCE(accessories.purchase_cost, 0) '.$order);
                 break;
             default:
                 $accessories = $accessories->orderBy($column_sort, $order);
