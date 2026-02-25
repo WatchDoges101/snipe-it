@@ -621,7 +621,7 @@ class Consumable extends SnipeModel
 
     public function scopeOrderTotalCost($query, $order)
     {
-        $order_by = 'COALESCE(consumables.purchase_cost, 0) * COALESCE(consumables_users_count, 0) '.$order;
-        return $query->orderByRaw($order_by);
+        $orderBy = 'COALESCE(consumables.purchase_cost, 0) * COALESCE(consumables_users_count, 0) '.$order;
+        return $query->orderByRaw($orderBy);
     }
 }
