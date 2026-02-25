@@ -323,4 +323,18 @@ class Maintenance extends SnipeModel implements ICompanyableChild
     {
         return $query->leftJoin('users as admin_sort', 'maintenances.created_by', '=', 'admin_sort.id')->select('maintenances.*')->orderBy('admin_sort.first_name', $order)->orderBy('admin_sort.last_name', $order);
     }
+
+    public function scopeOrderByAssetModelName($query, $order)
+    {
+        return $query->join('assets as maintained_asset', 'maintenances.asset_id', '=', 'maintained_asset.id')
+            ->leftjoin('models as maintained_asset_model', 'maintained_asset_model.id', '=', 'maintained_asset.model_id')
+            ->orderBy('maintained_asset_model.name', $order);
+    }
+
+    public function scopeOrderByAssetModelNumber($query, $order)
+    {
+        return $query->join('assets as maintained_asset', 'maintenances.asset_id', '=', 'maintained_asset.id')
+            ->leftjoin('models as maintained_asset_model', 'maintained_asset_model.id', '=', 'maintained_asset.model_id')
+            ->orderBy('maintained_asset_model.model_number', $order);
+    }
 }
