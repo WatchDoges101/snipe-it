@@ -143,6 +143,12 @@ class ComponentsController extends Controller
             case 'created_by':
                 $components = $components->OrderByCreatedBy($order);
                 break;
+            case 'purchase_cost':
+                $components = $components->orderByRaw('COALESCE(components.purchase_cost, 0) '.$order);
+                break;
+            case 'total_cost':
+                $components = $components->orderByRaw('COALESCE(components.qty, 0) * COALESCE(components.purchase_cost, 0) '.$order);
+                break;
             default:
                 $components = $components->orderBy($column_sort, $order);
                 break;
