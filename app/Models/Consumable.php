@@ -621,7 +621,17 @@ class Consumable extends SnipeModel
 
     public function scopeOrderTotalCost($query, $order)
     {
-        $orderBy = 'COALESCE(consumables.purchase_cost, 0) * COALESCE(consumables_users_count, 0) '.$order;
-        return $query->orderByRaw($orderBy);
+        $consumablesUsedSubquery = DB::table('action_logs')
+            ->selectRaw('item_id, SUM(COALESCE(quantity, 1)) as used_quantity')
+            ->where('item_type', self::class)
+            ->where('action_type', 'checkout')
+            ->groupBy('item_id');
+
+        return $query
+            ->leftJoinSub($consumablesUsedSubquery, 'consumables_used_sort', function ($join) {
+                $join->on('consumables.id', '=', 'consumables_used_sort.item_id');
+            })
+            ->select('consumables.*')
+            ->orderByRaw('COALESCE(consumables.purchase_cost, 0) * COALESCE(consumables_used_sort.used_quantity, 0) '.$order);
     }
 }
