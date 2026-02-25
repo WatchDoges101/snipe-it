@@ -618,4 +618,10 @@ class Consumable extends SnipeModel
     {
         return $query->leftJoin('users as users_sort', 'consumables.created_by', '=', 'users_sort.id')->select('consumables.*')->orderBy('users_sort.first_name', $order)->orderBy('users_sort.last_name', $order);
     }
+
+    public function scopeOrderTotalCost($query, $order)
+    {
+        $order_by = 'COALESCE(consumables.purchase_cost, 0) * COALESCE(consumables_users_count, 0) '.$order;
+        return $query->orderByRaw($order_by);
+    }
 }
