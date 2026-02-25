@@ -74,15 +74,15 @@ class AcceptanceController extends Controller
      */
     public function store(Request $request, $id) : RedirectResponse
     {
-
-        if (!$acceptance = CheckoutAcceptance::find($id)) {
-            return redirect()->route('account.accept')->with('error', trans('admin/hardware/message.does_not_exist'));
-        }
-        
+        $acceptance = CheckoutAcceptance::find($id);
         $assigned_user = User::find($acceptance->assigned_to_id);
         $settings = Setting::getSettings();
         $sig_filename='';
 
+
+        if (is_null($acceptance)) {
+            return redirect()->route('account.accept')->with('error', trans('admin/hardware/message.does_not_exist'));
+        }
 
         if (! $acceptance->isPending()) {
             return redirect()->route('account.accept')->with('error', trans('admin/users/message.error.asset_already_accepted'));
@@ -152,8 +152,8 @@ class AcceptanceController extends Controller
             'eula' => $item->getEula(),
             'note' => $request->input('note'),
             'check_out_date' => Helper::getFormattedDateObject($acceptance->created_at, 'datetime', false),
-            'accepted_date' => Helper::getFormattedDateObject(now(), 'datetime', false),
-            'declined_date' => Helper::getFormattedDateObject(now(), 'datetime', false),
+            'accepted_date' => Helper::getFormattedDateObject(now()->format('Y-m-d H:i:s'), 'datetime', false),
+            'declined_date' => Helper::getFormattedDateObject(now()->format('Y-m-d H:i:s'), 'datetime', false),
             'assigned_to' => $assigned_user->display_name,
             'email' => $assigned_user->email,
             'employee_num' => $assigned_user->employee_num,

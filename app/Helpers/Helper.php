@@ -1130,16 +1130,9 @@ class Helper
 
 
         try {
-            $displayTimezone = $settings?->timezone ?: config('app.timezone');
-
-            if ($date instanceof Carbon) {
-                $tmp_date = $date->copy();
-            } else {
-                $tmp_date = Carbon::parse($date);
-            }
+            $tmp_date = new Carbon($date);
 
             if ($type == 'datetime') {
-                $tmp_date = $tmp_date->setTimezone($displayTimezone);
                 $dt['datetime'] = $tmp_date->format('Y-m-d H:i:s');
                 $dt['formatted'] = $tmp_date->format($settings->date_display_format.' '.$settings->time_display_format);
             } else {

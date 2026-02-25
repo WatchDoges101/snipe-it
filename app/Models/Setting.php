@@ -77,17 +77,6 @@ class Setting extends Model
         'manager_view_enabled' => 'boolean',
     ];
 
-    protected static function booted(): void
-    {
-        static::saved(function () {
-            self::$_cache = null;
-        });
-
-        static::deleted(function () {
-            self::$_cache = null;
-        });
-    }
-
     /**
      * Get the app settings.
      *  Cache is expired on Setting model saved in EventServiceProvider.

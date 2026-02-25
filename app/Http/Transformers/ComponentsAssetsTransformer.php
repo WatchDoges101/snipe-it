@@ -2,7 +2,6 @@
 
 namespace App\Http\Transformers;
 
-use App\Helpers\Helper;
 use App\Models\Asset;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Collection;
@@ -24,7 +23,7 @@ class ComponentsAssetsTransformer
         $array = [
             'id' => $asset->id,
             'name' => e($asset->name),
-            'created_at' => Helper::getFormattedDateObject($asset->created_at, 'date', false),
+            'created_at' => $asset->created_at->format('Y-m-d'),
             'qty' => $asset->components()->count(),
             'user_can_checkout' => $asset->availableForCheckout(),
             'note' => e($asset->note),

@@ -342,9 +342,8 @@ class SettingsController extends Controller
     public function getLocalization() : View
     {
         $setting = Setting::getSettings();
-        $timezones = timezone_identifiers_list();
 
-        return view('settings.localization', compact('setting', 'timezones'));
+        return view('settings.localization', compact('setting'));
     }
 
     /**
@@ -366,40 +365,11 @@ class SettingsController extends Controller
         $setting->default_currency = $request->input('default_currency', '$');
         $setting->date_display_format = $request->input('date_display_format');
         $setting->time_display_format = $request->input('time_display_format');
-        $setting->timezone = $request->input('timezone', config('app.timezone'));
         $setting->digit_separator = $request->input('digit_separator');
         $setting->name_display_format = $request->input('name_display_format');
         $setting->week_start = $request->input('week_start', 0);
 
         if ($setting->save()) {
-            Setting::$_cache = null;
-            $timezone = $setting->timezone ?: config('app.timezone');
-            config(['app.timezone' => $timezone]);
-            date_default_timezone_set($timezone);
-
-            try {
-                $driver = DB::connection()->getDriverName();
-
-                if ($driver === 'mysql') {
-                    DB::statement('SET time_zone = ?', [$timezone]);
-                } elseif ($driver === 'pgsql') {
-                    DB::statement("SET TIME ZONE '{$timezone}'");
-                }
-            } catch (\Throwable $e) {
-                try {
-                    $offset = now($timezone)->format('P');
-                    $driver = DB::connection()->getDriverName();
-
-                    if ($driver === 'mysql') {
-                        DB::statement('SET time_zone = ?', [$offset]);
-                    } elseif ($driver === 'pgsql') {
-                        DB::statement("SET TIME ZONE '{$offset}'");
-                    }
-                } catch (\Throwable $e) {
-                    // Ignore DB timezone sync failures and continue using PHP timezone settings.
-                }
-            }
-
             return redirect()->route('settings.index')
                 ->with('success', trans('admin/settings/message.update.success'));
         }
@@ -433,23 +403,24 @@ class SettingsController extends Controller
             return redirect()->to('admin')->with('error', trans('admin/settings/message.update.error'));
         }
 
+        // Check if the audit interval has changed - if it has, we want to update ALL of the assets audit dates
+        if ($request->input('audit_interval') != $setting->audit_interval) {
 
-        // Check if the audit interval has changed - if it has, check if we should update all of the assets audit dates
-        if ((($request->input('audit_interval') != $setting->audit_interval)) && ($request->input('update_existing_dates') == 1)) {
+            // This could be a negative number if the user is trying to set the audit interval to a lower number than it was before
+            $audit_diff_months = ((int)$request->input('audit_interval') - (int)($setting->audit_interval));
 
-                // This could be a negative number if the user is trying to set the audit interval to a lower number than it was before
-                $audit_diff_months = ((int)$request->input('audit_interval') - (int)($setting->audit_interval));
+            // Batch update the dates. We have to use this method to avoid time limit exceeded errors on very large datasets,
+            // but it DOES mean this change doesn't get logged in the action logs, since it skips the observer.
+            // @see https://stackoverflow.com/questions/54879160/laravel-observer-not-working-on-bulk-insert
+            $affected = Asset::whereNotNull('next_audit_date')
+                ->whereNull('deleted_at')
+                ->update(
+                    ['next_audit_date' => DB::raw('DATE_ADD(next_audit_date, INTERVAL '.$audit_diff_months.' MONTH)')]
+            );
 
-                // Batch update the dates. We have to use this method to avoid time limit exceeded errors on very large datasets,
-                // but it DOES mean this change doesn't get logged in the action logs, since it skips the observer.
-                // @see https://stackoverflow.com/questions/54879160/laravel-observer-not-working-on-bulk-insert
-                $affected = Asset::whereNotNull('next_audit_date')
-                    ->whereNull('deleted_at')
-                    ->update(
-                        ['next_audit_date' => DB::raw('DATE_ADD(next_audit_date, INTERVAL ' . $audit_diff_months . ' MONTH)')]
-                    );
+            Log::debug($affected .' assets affected by audit interval update');
 
-                Log::debug($affected . ' assets affected by audit interval update');
+
         }
 
         $alert_email = rtrim($request->input('alert_email'), ',');

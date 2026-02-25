@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Models\Setting;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -24,13 +23,6 @@ class SettingsServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $settings = Setting::getSettings();
-        $appTimezone = $settings?->timezone ?: config('app.timezone');
-
-        config(['app.timezone' => $appTimezone]);
-        date_default_timezone_set($appTimezone);
-        $this->syncDatabaseTimezone($appTimezone);
-
 
         // Share common setting variables with all views.
         view()->composer('*', function ($view) {
@@ -187,10 +179,6 @@ class SettingsServiceProvider extends ServiceProvider
             return 'components/';
         });
 
-        app()->singleton('maintenances_upload_url', function () {
-            return 'maintenances/';
-        });
-
         // Set the monetary locale to the configured locale to make helper::parseFloat work.
         setlocale(LC_MONETARY, config('app.locale'));
         setlocale(LC_NUMERIC, config('app.locale'));
@@ -204,35 +192,5 @@ class SettingsServiceProvider extends ServiceProvider
      */
     public function register()
     {
-    }
-
-    protected function syncDatabaseTimezone(string $timezone): void
-    {
-        try {
-            $driver = DB::connection()->getDriverName();
-
-            if ($driver === 'mysql') {
-                DB::statement('SET time_zone = ?', [$timezone]);
-
-                return;
-            }
-
-            if ($driver === 'pgsql') {
-                DB::statement("SET TIME ZONE '{$timezone}'");
-            }
-        } catch (\Throwable $e) {
-            try {
-                $offset = now($timezone)->format('P');
-                $driver = DB::connection()->getDriverName();
-
-                if ($driver === 'mysql') {
-                    DB::statement('SET time_zone = ?', [$offset]);
-                } elseif ($driver === 'pgsql') {
-                    DB::statement("SET TIME ZONE '{$offset}'");
-                }
-            } catch (\Throwable $e) {
-                // Ignore DB timezone sync failures and continue using PHP timezone settings.
-            }
-        }
     }
 }
