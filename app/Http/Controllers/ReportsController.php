@@ -549,6 +549,10 @@ class ReportsController extends Controller
                 $header[] = 'Username';
             }
 
+            if ($request->filled('email')) {
+                $header[] = 'Email';
+            }
+
             if ($request->filled('employee_num')) {
                 $header[] = 'Employee No.';
             }
@@ -877,6 +881,15 @@ class ReportsController extends Controller
                         // Only works if we're checked out to a user, not anything else.
                         if ($asset->checkedOutToUser()) {
                             $row[] = ($asset->assignedto) ? $asset->assignedto->username : '';
+                        } else {
+                            $row[] = ''; // Empty string if unassigned
+                        }
+                    }
+
+                    if ($request->filled('email')) {
+                        // Only works if we're checked out to a user, not anything else.
+                        if ($asset->checkedOutToUser()) {
+                            $row[] = ($asset->assignedto) ? $asset->assignedto->email : '';
                         } else {
                             $row[] = ''; // Empty string if unassigned
                         }
