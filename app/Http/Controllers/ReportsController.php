@@ -968,37 +968,37 @@ class ReportsController extends Controller
                     }
 
                     if ($request->filled('checkout_date')) {
-                        $row[] = ($asset->last_checkout) ? $asset->last_checkout : '';
+                        $row[] = ($asset->last_checkout) ? Helper::getFormattedDateObject($asset->last_checkout, 'datetime', false) : '';
                     }
 
                     if ($request->filled('checkin_date')) {
                         $row[] = ($asset->last_checkin)
-                            ? Carbon::parse($asset->last_checkin)->format('Y-m-d')
+                            ? Helper::getFormattedDateObject($asset->last_checkin, 'date', false)
                             : '';
                     }
 
                     if ($request->filled('expected_checkin')) {
-                        $row[] = ($asset->expected_checkin) ? $asset->expected_checkin : '';
+                        $row[] = ($asset->expected_checkin) ? Helper::getFormattedDateObject($asset->expected_checkin, 'date', false) : '';
                     }
 
                     if ($request->filled('created_at')) {
-                        $row[] = ($asset->created_at) ? $asset->created_at : '';
+                        $row[] = ($asset->created_at) ? Helper::getFormattedDateObject($asset->created_at, 'datetime', false) : '';
                     }
 
                     if ($request->filled('updated_at')) {
-                        $row[] = ($asset->updated_at) ? $asset->updated_at : '';
+                        $row[] = ($asset->updated_at) ? Helper::getFormattedDateObject($asset->updated_at, 'datetime', false) : '';
                     }
 
                     if ($request->filled('deleted_at')) {
-                        $row[] = ($asset->deleted_at) ? $asset->deleted_at : '';
+                        $row[] = ($asset->deleted_at) ? Helper::getFormattedDateObject($asset->deleted_at, 'datetime', false) : '';
                     }
 
                     if ($request->filled('last_audit_date')) {
-                        $row[] = ($asset->last_audit_date) ? $asset->last_audit_date : '';
+                        $row[] = ($asset->last_audit_date) ? Helper::getFormattedDateObject($asset->last_audit_date, 'datetime', false) : '';
                     }
 
                     if ($request->filled('next_audit_date')) {
-                        $row[] = ($asset->next_audit_date) ? $asset->next_audit_date : '';
+                        $row[] = ($asset->next_audit_date) ? Helper::getFormattedDateObject($asset->next_audit_date, 'date', false) : '';
                     }
 
                     if ($request->filled('notes')) {
@@ -1317,7 +1317,7 @@ class ReportsController extends Controller
             if ($item != null){
             
                 $row    = [ ];
-                $row[]  = str_replace(',', '', $item->acceptance->created_at);
+                $row[]  = str_replace(',', '', Helper::getFormattedDateObject($item->acceptance->created_at, 'datetime', false));
                 $row[]  = str_replace(',', '', $item->type);
                 $row[]  = str_replace(',', '', $item->plain_text_company);
                 $row[]  = str_replace(',', '', $item->plain_text_category);

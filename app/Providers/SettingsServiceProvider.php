@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Setting;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -28,6 +29,7 @@ class SettingsServiceProvider extends ServiceProvider
 
         config(['app.timezone' => $appTimezone]);
         date_default_timezone_set($appTimezone);
+        $this->syncDatabaseTimezone($appTimezone);
 
 
         // Share common setting variables with all views.
@@ -198,5 +200,35 @@ class SettingsServiceProvider extends ServiceProvider
      */
     public function register()
     {
+    }
+
+    protected function syncDatabaseTimezone(string $timezone): void
+    {
+        try {
+            $driver = DB::connection()->getDriverName();
+
+            if ($driver === 'mysql') {
+                DB::statement('SET time_zone = ?', [$timezone]);
+
+                return;
+            }
+
+            if ($driver === 'pgsql') {
+                DB::statement("SET TIME ZONE '{$timezone}'");
+            }
+        } catch (\Throwable $e) {
+            try {
+                $offset = now($timezone)->format('P');
+                $driver = DB::connection()->getDriverName();
+
+                if ($driver === 'mysql') {
+                    DB::statement('SET time_zone = ?', [$offset]);
+                } elseif ($driver === 'pgsql') {
+                    DB::statement("SET TIME ZONE '{$offset}'");
+                }
+            } catch (\Throwable $e) {
+                // Ignore DB timezone sync failures and continue using PHP timezone settings.
+            }
+        }
     }
 }

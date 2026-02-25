@@ -372,6 +372,34 @@ class SettingsController extends Controller
         $setting->week_start = $request->input('week_start', 0);
 
         if ($setting->save()) {
+            Setting::$_cache = null;
+            $timezone = $setting->timezone ?: config('app.timezone');
+            config(['app.timezone' => $timezone]);
+            date_default_timezone_set($timezone);
+
+            try {
+                $driver = DB::connection()->getDriverName();
+
+                if ($driver === 'mysql') {
+                    DB::statement('SET time_zone = ?', [$timezone]);
+                } elseif ($driver === 'pgsql') {
+                    DB::statement("SET TIME ZONE '{$timezone}'");
+                }
+            } catch (\Throwable $e) {
+                try {
+                    $offset = now($timezone)->format('P');
+                    $driver = DB::connection()->getDriverName();
+
+                    if ($driver === 'mysql') {
+                        DB::statement('SET time_zone = ?', [$offset]);
+                    } elseif ($driver === 'pgsql') {
+                        DB::statement("SET TIME ZONE '{$offset}'");
+                    }
+                } catch (\Throwable $e) {
+                    // Ignore DB timezone sync failures and continue using PHP timezone settings.
+                }
+            }
+
             return redirect()->route('settings.index')
                 ->with('success', trans('admin/settings/message.update.success'));
         }
