@@ -86,20 +86,6 @@
 
                         </div>
 
-                        <div class="form-group {{ $errors->has('timezone') ? 'error' : '' }}">
-                            <label for="timezone" class="col-md-3 control-label">{{ trans('admin/settings/general.timezone') }}</label>
-                            <div class="col-md-5 col-xs-12">
-                                <select name="timezone" id="timezone" class="select2" style="width: 100%;" aria-label="timezone">
-                                    @foreach ($timezones as $timezone)
-                                        <option value="{{ $timezone }}" @selected(old('timezone', $setting->timezone ?: config('app.timezone')) == $timezone)>
-                                            {{ $timezone }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                {!! $errors->first('timezone', '<span class="alert-msg" aria-hidden="true">:message</span>') !!}
-                            </div>
-                        </div>
-
                         <!-- Week Start format -->
                         <div class="form-group {{ $errors->has('week_start') ? 'error' : '' }}">
 
