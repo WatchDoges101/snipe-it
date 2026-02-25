@@ -54,4 +54,32 @@ class ComponentIndexTest extends TestCase
             ->assertResponseDoesNotContainInRows($componentA)
             ->assertResponseContainsInRows($componentB);
     }
+
+    public function testCanSortComponentsByTotalCost()
+    {
+        $user = User::factory()->viewComponents()->create();
+
+        $cheaperTotal = Component::factory()->create([
+            'name' => 'Cheaper Component Total',
+            'qty' => 2,
+            'purchase_cost' => 10,
+        ]);
+
+        $moreExpensiveTotal = Component::factory()->create([
+            'name' => 'More Expensive Component Total',
+            'qty' => 3,
+            'purchase_cost' => 20,
+        ]);
+
+        $response = $this->actingAsForApi($user)
+            ->getJson(route('api.components.index', [
+                'sort' => 'total_cost',
+                'order' => 'asc',
+            ]))
+            ->assertOk();
+
+        $rowIds = collect($response->json('rows'))->pluck('id')->all();
+
+        $this->assertTrue(array_search($cheaperTotal->id, $rowIds) < array_search($moreExpensiveTotal->id, $rowIds));
+    }
 }
