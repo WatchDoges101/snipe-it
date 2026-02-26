@@ -315,7 +315,8 @@ class LicensesController extends Controller
     public function getExportLicensesCsv()
     {
         $this->authorize('view', License::class);
-        \Debugbar::disable();
+
+        $this->disableDebugbar();
 
         $response = new StreamedResponse(function () {
             // Open output stream

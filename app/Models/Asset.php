@@ -1926,6 +1926,7 @@ class Asset extends Depreciable
                                     function ($query) use ($search_val) {
                                         $query->where('users.first_name', 'LIKE', '%'.$search_val.'%')
                                             ->orWhere('users.last_name', 'LIKE', '%'.$search_val.'%')
+                                            ->orWhere('users.display_name', 'LIKE', '%'.$search_val.'%')
                                             ->orWhere('users.username', 'LIKE', '%'.$search_val.'%');
                                     }
                                 );

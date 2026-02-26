@@ -510,7 +510,8 @@ class UsersController extends Controller
     public function getExportUserCsv()
     {
         $this->authorize('view', User::class);
-        \Debugbar::disable();
+
+        $this->disableDebugbar();
 
         $response = new StreamedResponse(function () {
             // Open output stream
