@@ -95,8 +95,8 @@
                         </x-slot:header>
                         <x-slot:content>
                             <x-table
-                                    name="locationHistory"
-                                    api_url="{{ route('api.activity.index', ['target_id' => $license->id, 'target_type' => 'license']) }}"
+                                    name="locationHistory_{{ $license->id }}"
+                                    api_url="{{ route('api.activity.index', ['item_id' => $license->id, 'item_type' => 'license']) }}"
                                     :presenter="\App\Presenters\HistoryPresenter::dataTableLayout()"
                                     export_filename="export-licenses-{{ str_slug($license->name) }}-{{ date('Y-m-d') }}"
                             />
